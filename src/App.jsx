@@ -2,8 +2,10 @@ import { useState } from "react";
 import { ArrowRight, Eye, EyeOff, Ticket, ShieldCheck, CircleHelp } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
-// Login page only for this first step. We will build Sign Up separately next.
 export default function App() {
+  // mode decides whether this form logs an existing user in or creates an account.
+  const [mode, setMode] = useState("login");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -11,37 +13,63 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("error");
 
-  // This function sends the email/password to Supabase Auth.
-  // Supabase checks the credentials; we never save the raw password ourselves.
-  async function handleLogin(event) {
+  // Keep the form message and mode in sync when switching between login and signup.
+  function switchMode(nextMode) {
+    setMode(nextMode);
+    setMessage("");
+    setPassword("");
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
 
     if (!isSupabaseConfigured || !supabase) {
       setMessageType("error");
-      setMessage(
-        "Supabase is not connected yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel."
-      );
+      setMessage("Supabase is not connected. Check VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel.");
       return;
     }
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    try {
+      if (mode === "signup") {
+        // Supabase Auth securely stores credentials; the raw password is never saved in our own table.
+        // full_name is saved as Auth user metadata for now. We can add a separate profiles table next.
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: { full_name: fullName.trim() },
+          },
+        });
 
-    setLoading(false);
+        if (error) throw error;
 
-    if (error) {
+        setMessageType("success");
+        setMessage(
+          data.session
+            ? "Account created successfully! You can now continue to Ticketly."
+            : "Account created! Check your email for a confirmation link, then sign in."
+        );
+      } else {
+        // Supabase verifies the email/password pair for an existing account.
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (error) throw error;
+
+        setMessageType("success");
+        setMessage("You are signed in successfully. Your dashboard is the next step.");
+      }
+    } catch (error) {
       setMessageType("error");
-      setMessage(error.message);
-      return;
+      setMessage(error.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setMessageType("success");
-    setMessage("You are signed in successfully. Account dashboard is the next step.");
   }
 
   return (
@@ -79,14 +107,17 @@ export default function App() {
         <div className="decor decor-two" />
       </section>
 
-      {/* Right panel: accessible login form. */}
+      {/* Right panel: the same form layout is reused for login and account creation. */}
       <section className="form-panel">
         <div className="form-topline">
-          <span>New to Ticketly?</span>
-          <button className="text-button" type="button" onClick={() => {
-            setMessageType("info");
-            setMessage("Sign Up is the next step we will build after this login page.");
-          }}>Create account</button>
+          <span>{mode === "login" ? "New to Ticketly?" : "Already have an account?"}</span>
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => switchMode(mode === "login" ? "signup" : "login")}
+          >
+            {mode === "login" ? "Create account" : "Sign in"}
+          </button>
         </div>
 
         <div className="login-card">
@@ -96,12 +127,33 @@ export default function App() {
           </div>
 
           <div className="form-heading">
-            <span className="form-kicker">WELCOME BACK</span>
-            <h2>Sign in to your account</h2>
-            <p>Enter your details below to continue.</p>
+            <span className="form-kicker">{mode === "login" ? "WELCOME BACK" : "JOIN TICKETLY"}</span>
+            <h2>{mode === "login" ? "Sign in to your account" : "Create your account"}</h2>
+            <p>
+              {mode === "login"
+                ? "Enter your details below to continue."
+                : "Create an account to discover and list tickets."}
+            </p>
           </div>
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleSubmit}>
+            {mode === "signup" && (
+              <div className="field-group">
+                <label htmlFor="fullName">Full name</label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Your full name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  required
+                  maxLength={80}
+                />
+              </div>
+            )}
+
             <div className="field-group">
               <label htmlFor="email">Email address</label>
               <input
@@ -119,24 +171,26 @@ export default function App() {
             <div className="field-group">
               <div className="label-row">
                 <label htmlFor="password">Password</label>
-                <button
-                  type="button"
-                  className="text-button small"
-                  onClick={() => {
-                    setMessageType("info");
-                    setMessage("Password reset can be added after the core login and sign-up flow.");
-                  }}
-                >
-                  Forgot password?
-                </button>
+                {mode === "login" && (
+                  <button
+                    type="button"
+                    className="text-button small"
+                    onClick={() => {
+                      setMessageType("info");
+                      setMessage("Password reset can be added after the core login and sign-up flow.");
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                )}
               </div>
               <div className="password-wrap">
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  placeholder={mode === "login" ? "Enter your password" : "Create a password (at least 6 characters)"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   required
@@ -160,14 +214,18 @@ export default function App() {
             )}
 
             <button className="submit-button" type="submit" disabled={loading}>
-              <span>{loading ? "Signing in..." : "Sign in"}</span>
+              <span>
+                {loading
+                  ? (mode === "login" ? "Signing in..." : "Creating account...")
+                  : (mode === "login" ? "Sign in" : "Create account")}
+              </span>
               {!loading && <ArrowRight size={18} />}
             </button>
           </form>
 
           <div className="secure-note">
             <ShieldCheck size={16} />
-            <span>Your sign-in is securely handled by Supabase Auth.</span>
+            <span>Your account is securely handled by Supabase Auth.</span>
           </div>
         </div>
 

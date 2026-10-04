@@ -13,6 +13,45 @@ const states = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
 ];
 
+const citiesByState = {
+  "Andhra Pradesh": ["Amaravati", "Anantapur", "Chittoor", "Guntur", "Kadapa", "Kakinada", "Kurnool", "Nellore", "Rajahmundry", "Tirupati", "Vijayawada", "Visakhapatnam"],
+  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang", "Ziro"],
+  "Assam": ["Dibrugarh", "Guwahati", "Jorhat", "Nagaon", "Silchar", "Tezpur"],
+  "Bihar": ["Bhagalpur", "Bihar Sharif", "Darbhanga", "Gaya", "Muzaffarpur", "Patna", "Purnia"],
+  "Chhattisgarh": ["Ambikapur", "Bhilai", "Bilaspur", "Durg", "Korba", "Raipur", "Rajnandgaon"],
+  "Goa": ["Bicholim", "Mapusa", "Margao", "Panaji", "Ponda", "Vasco da Gama"],
+  "Gujarat": ["Ahmedabad", "Anand", "Bhavnagar", "Gandhinagar", "Jamnagar", "Junagadh", "Rajkot", "Surat", "Vadodara"],
+  "Haryana": ["Ambala", "Faridabad", "Gurugram", "Hisar", "Karnal", "Panipat", "Rohtak", "Sonipat"],
+  "Himachal Pradesh": ["Bilaspur", "Dharamshala", "Hamirpur", "Kullu", "Mandi", "Shimla", "Solan"],
+  "Jharkhand": ["Bokaro", "Deoghar", "Dhanbad", "Hazaribagh", "Jamshedpur", "Ranchi"],
+  "Karnataka": ["Ballari", "Belagavi", "Bengaluru", "Davanagere", "Hubballi", "Kalaburagi", "Mangaluru", "Mysuru", "Shivamogga", "Tumakuru", "Udupi"],
+  "Kerala": ["Alappuzha", "Kannur", "Kochi", "Kollam", "Kozhikode", "Palakkad", "Thiruvananthapuram", "Thrissur"],
+  "Madhya Pradesh": ["Bhopal", "Dewas", "Gwalior", "Indore", "Jabalpur", "Ratlam", "Rewa", "Sagar", "Satna", "Ujjain"],
+  "Maharashtra": ["Amravati", "Chhatrapati Sambhajinagar", "Kolhapur", "Mumbai", "Nagpur", "Nashik", "Navi Mumbai", "Pune", "Solapur", "Thane"],
+  "Manipur": ["Bishnupur", "Churachandpur", "Imphal", "Thoubal"],
+  "Meghalaya": ["Baghmara", "Jowai", "Nongpoh", "Shillong", "Tura"],
+  "Mizoram": ["Aizawl", "Champhai", "Kolasib", "Lunglei", "Serchhip"],
+  "Nagaland": ["Dimapur", "Kohima", "Mokokchung", "Tuensang", "Wokha"],
+  "Odisha": ["Balasore", "Berhampur", "Bhubaneswar", "Cuttack", "Puri", "Rourkela", "Sambalpur"],
+  "Punjab": ["Amritsar", "Bathinda", "Jalandhar", "Ludhiana", "Mohali", "Pathankot", "Patiala"],
+  "Rajasthan": ["Ajmer", "Alwar", "Bikaner", "Jaipur", "Jodhpur", "Kota", "Udaipur"],
+  "Sikkim": ["Gangtok", "Geyzing", "Mangan", "Namchi", "Pakyong"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Erode", "Hosur", "Madurai", "Salem", "Thanjavur", "Tiruchirappalli", "Tirunelveli", "Vellore"],
+  "Telangana": ["Hyderabad", "Karimnagar", "Khammam", "Nizamabad", "Ramagundam", "Warangal"],
+  "Tripura": ["Agartala", "Ambassa", "Belonia", "Dharmanagar", "Kailashahar", "Udaipur"],
+  "Uttar Pradesh": ["Agra", "Aligarh", "Ayodhya", "Bareilly", "Ghaziabad", "Gorakhpur", "Jhansi", "Kanpur", "Lucknow", "Mathura", "Meerut", "Noida", "Prayagraj", "Varanasi"],
+  "Uttarakhand": ["Dehradun", "Haldwani", "Haridwar", "Kashipur", "Rishikesh", "Roorkee"],
+  "West Bengal": ["Asansol", "Bardhaman", "Durgapur", "Howrah", "Kharagpur", "Kolkata", "Malda", "Siliguri"],
+  "Andaman and Nicobar Islands": ["Port Blair", "Diglipur", "Rangat"],
+  "Chandigarh": ["Chandigarh"],
+  "Dadra and Nagar Haveli and Daman and Diu": ["Daman", "Diu", "Silvassa"],
+  "Delhi": ["New Delhi", "Delhi"],
+  "Jammu and Kashmir": ["Anantnag", "Baramulla", "Jammu", "Srinagar", "Udhampur"],
+  "Ladakh": ["Kargil", "Leh"],
+  "Lakshadweep": ["Kavaratti", "Agatti", "Andrott", "Minicoy"],
+  "Puducherry": ["Karaikal", "Mahe", "Puducherry", "Yanam"]
+};
+
 export default function App() {
   const [mode, setMode] = useState("login");
   const [fullName, setFullName] = useState("");
@@ -176,8 +215,8 @@ export default function App() {
               <div className="field-group"><label htmlFor="fullName">Full name</label><div className="input-wrap"><Users size={16} /><input id="fullName" name="fullName" autoComplete="name" placeholder="Enter your full name" value={fullName} onChange={e => setFullName(e.target.value)} required maxLength={80} /></div></div>
               <div className="field-group"><label htmlFor="signupEmail">Email address</label><div className="input-wrap"><Mail size={16} /><input id="signupEmail" name="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required /></div></div>
               <div className="field-group"><label htmlFor="mobile">Mobile number</label><div className="input-wrap"><span className="country-code">🇮🇳 +91</span><input id="mobile" name="mobile" type="tel" autoComplete="tel-national" inputMode="numeric" placeholder="Enter mobile number" value={mobile} onChange={e => setMobile(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))} required minLength={10} maxLength={10} /></div></div>
-              <div className="field-group"><label htmlFor="state">State / Union Territory</label><div className="select-wrap"><MapPin size={16} /><select id="state" value={stateName} onChange={e => setStateName(e.target.value)} required><option value="">Select your state</option>{states.map(item => <option key={item} value={item}>{item}</option>)}</select><ChevronDown size={15} /></div></div>
-              <div className="field-group field-full"><label htmlFor="city">City</label><div className="input-wrap"><MapPin size={16} /><input id="city" name="city" placeholder="Enter your city" value={city} onChange={e => setCity(e.target.value)} required /></div></div>
+              <div className="field-group"><label htmlFor="state">State / Union Territory</label><div className="select-wrap"><MapPin size={16} /><select id="state" value={stateName} onChange={e => { setStateName(e.target.value); setCity(""); }} required><option value="">Select your state</option>{states.map(item => <option key={item} value={item}>{item}</option>)}</select><ChevronDown size={15} /></div></div>
+              <div className="field-group field-full"><label htmlFor="city">City</label><div className="select-wrap"><MapPin size={16} /><select id="city" name="city" value={city} onChange={e => setCity(e.target.value)} required disabled={!stateName}><option value="">{stateName ? "Select your city" : "Select a state first"}</option>{(citiesByState[stateName] || []).map(item => <option key={item} value={item}>{item}</option>)}</select><ChevronDown size={15} /></div><small className="field-hint">Cities shown for your selected state.</small></div>
             </div>}
 
             {mode === "login" && <div className="field-group"><label htmlFor="email">Email address</label><div className="input-wrap"><Mail size={17} /><input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required /></div></div>}

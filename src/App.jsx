@@ -68,6 +68,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("error");
+  const [legalPage, setLegalPage] = useState("");
 
   useEffect(() => {
     if (!supabase) return undefined;
@@ -253,7 +254,7 @@ export default function App() {
             {(mode === "signup" || isResetMode) && <div className="field-group"><label htmlFor="confirmPassword">Confirm password</label><div className="input-wrap password-wrap"><LockKeyhole size={16} /><input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" placeholder="Confirm your password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={6} /><button type="button" className="password-toggle" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"} onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></div>}
 
             {mode === "login" && !isResetMode && <label className="remember-row"><input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} /><span>Remember me</span></label>}
-            {mode === "signup" && !isResetMode && <label className="terms-row"><input type="checkbox" required /><span>I agree to the <a href="#terms" onClick={e => e.preventDefault()}>Terms of Service</a> and <a href="#privacy" onClick={e => e.preventDefault()}>Privacy Policy</a></span></label>}
+            {mode === "signup" && !isResetMode && <label className="terms-row"><input type="checkbox" required /><span>I agree to the <a href="#terms" onClick={e => { e.preventDefault(); setLegalPage("terms"); }}>Terms of Service</a> and <a href="#privacy" onClick={e => { e.preventDefault(); setLegalPage("privacy"); }}>Privacy Policy</a></span></label>}
 
             {message && <div className={`form-message ${messageType}`} role="status">{message}</div>}
             <button className="submit-button" type="submit" disabled={loading}><span>{loading ? (isResetMode ? "Updating password..." : mode === "login" ? "Logging in..." : "Creating account...") : (isResetMode ? "Reset Password" : mode === "login" ? "Log In" : "Create Account")}</span>{!loading && <ArrowRight size={18} />}</button>
@@ -264,6 +265,39 @@ export default function App() {
         </div>
         <footer className="form-footer"><span>© 2026 ConnectHub</span><span><ShieldCheck size={14} /> Your connections start safely</span></footer>
       </section>
+      {legalPage && <div className="legal-overlay" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setLegalPage(""); }}>
+        <section className="legal-dialog" role="dialog" aria-modal="true" aria-labelledby="legal-title">
+          <button type="button" className="legal-close" onClick={() => setLegalPage("")} aria-label="Close legal information">×</button>
+          <span className="form-kicker">CONNECTHUB · USER GUIDELINES</span>
+          <h2 id="legal-title">{legalPage === "terms" ? "Terms of Service" : "Privacy Policy"}</h2>
+          {legalPage === "terms" ? <>
+            <h3>1. What ConnectHub does</h3>
+            <p>ConnectHub is a platform that helps people who need something connect with people who may be able to provide it. We primarily facilitate connections between users; we do not ourselves sell tickets, goods, or services listed by users.</p>
+            <h3>2. Deals and bargaining are between users</h3>
+            <p>Any price negotiation, bargaining, payment, exchange, delivery, meeting, or final transaction is decided directly between the users involved. ConnectHub does not set or guarantee a user's price and is not a party to user-to-user deals. Please verify listings and details before agreeing to a transaction.</p>
+            <h3>3. Contact information is not shared by ConnectHub</h3>
+            <p>ConnectHub does not disclose or share your private contact details with another user on your behalf without your action or permission, except where required by law or necessary to protect the platform and its users. If you choose to share your phone number, email, or other contact details with another user, you do so voluntarily and at your own discretion.</p>
+            <h3>4. User responsibility and safety</h3>
+            <p>Users are responsible for the accuracy of their listings, their communications, and any decision to transact or share information. Do not share passwords, OTPs, financial credentials, or unnecessary personal information. Be cautious of fraud and report suspicious activity.</p>
+            <h3>5. No guarantee of user transactions</h3>
+            <p>ConnectHub helps users discover one another but does not guarantee that a listing, user, ticket, product, payment, or transaction is genuine, completed, or dispute-free. To the extent permitted by applicable law, users are responsible for resolving their arrangements with each other.</p>
+            <h3>6. Acceptable use</h3>
+            <p>Do not post misleading, illegal, fraudulent, unsafe, or unauthorised listings, or misuse another person's information. We may restrict content or accounts that violate these rules or applicable law.</p>
+            <h3>7. Updates</h3>
+            <p>We may update these terms as the service develops. Continued use after an update means you acknowledge the updated terms, subject to applicable law.</p>
+          </> : <>
+            <h3>Information you provide</h3>
+            <p>We may collect information you enter, such as your name, email, mobile number, city, account details, and listings, to operate ConnectHub and help users connect.</p>
+            <h3>Contact details and your choice</h3>
+            <p>ConnectHub does not sell your personal information or share your private contact details with other users on its own initiative. If you voluntarily send your contact details to another user, you decide what to share and with whom. Please share carefully.</p>
+            <h3>Service providers and legal requirements</h3>
+            <p>We use service providers such as our authentication and hosting providers to run the platform. Information may be processed by them to provide the service, or disclosed when legally required or needed to protect users and the platform.</p>
+            <h3>Your choices</h3>
+            <p>Keep your account credentials private and avoid including sensitive information in public listings. Contact the platform team to ask about account or personal-information concerns.</p>
+          </>}
+          <button type="button" className="submit-button legal-done" onClick={() => setLegalPage("")}>I understand</button>
+        </section>
+      </div>}
     </main>
   );
 }

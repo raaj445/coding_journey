@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
@@ -54,6 +54,7 @@ const citiesByState = {
 
 export default function App() {
   const [mode, setMode] = useState("login");
+  const [isResetMode, setIsResetMode] = useState(() => new URLSearchParams(window.location.search).get("reset") === "1");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
@@ -68,6 +69,19 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("error");
 
+  useEffect(() => {
+    if (!supabase) return undefined;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsResetMode(true);
+        setMessage("");
+        setPassword("");
+        setConfirmPassword("");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   function switchMode(nextMode) {
     setMode(nextMode);
     setMessage("");
@@ -79,7 +93,7 @@ export default function App() {
     event.preventDefault();
     setMessage("");
 
-    if (mode === "signup" && password !== confirmPassword) {
+    if ((mode === "signup" || isResetMode) && password !== confirmPassword) {
       setMessageType("error");
       setMessage("Passwords do not match. Please check both fields.");
       return;
@@ -97,7 +111,17 @@ export default function App() {
 
     setLoading(true);
     try {
-      if (mode === "signup") {
+      if (isResetMode) {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+        setIsResetMode(false);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setMode("login");
+        setPassword("");
+        setConfirmPassword("");
+        setMessageType("success");
+        setMessage("Your password has been reset successfully. You can now log in with your new password.");
+      } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -136,7 +160,7 @@ export default function App() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/?reset=1`,
       });
       if (error) throw error;
       setMessageType("success");
@@ -150,7 +174,7 @@ export default function App() {
   }
 
   return (
-    <main className={`auth-layout ${mode === "signup" ? "signup-mode" : "login-mode"}`}>
+    <main className={`auth-layout ${mode === "signup" && !isResetMode ? "signup-mode" : "login-mode"}`}>
       <section className="visual-panel" aria-label="ConnectHub community">
         <div className="visual-backdrop" />
         <header className="site-header">
@@ -196,22 +220,22 @@ export default function App() {
 
       <section className="form-side">
         <div className="form-topline">
-          <span>{mode === "login" ? "New to ConnectHub?" : "Already have an account?"}</span>
-          <button className="link-button" type="button" onClick={() => switchMode(mode === "login" ? "signup" : "login")}>
-            {mode === "login" ? "Create an account" : "Log in"}
+          <span>{isResetMode ? "Remembered your password?" : mode === "login" ? "New to ConnectHub?" : "Already have an account?"}</span>
+          <button className="link-button" type="button" onClick={() => { if (isResetMode) { setIsResetMode(false); window.history.replaceState({}, document.title, window.location.pathname); setMessage(""); } else switchMode(mode === "login" ? "signup" : "login"); }}>
+            {isResetMode ? "Log in" : mode === "login" ? "Create an account" : "Log in"}
           </button>
         </div>
 
         <div className={`auth-card ${mode === "signup" ? "auth-card-signup" : ""}`}>
           <div className="mobile-brand brand"><span className="brand-symbol"><Users size={20} fill="currentColor" /></span><span>ConnectHub</span></div>
           <div className="form-heading">
-            <span className="form-kicker">{mode === "login" ? "WELCOME BACK" : "YOUR NEXT CHAPTER STARTS HERE"}</span>
-            <h2>{mode === "login" ? "Welcome back" : "Create your account"}</h2>
-            <p>{mode === "login" ? "Log in to continue your journey." : "Join ConnectHub and start connecting today."}</p>
+            <span className="form-kicker">{isResetMode ? "SECURE YOUR ACCOUNT" : mode === "login" ? "WELCOME BACK" : "YOUR NEXT CHAPTER STARTS HERE"}</span>
+            <h2>{isResetMode ? "Set a new password" : mode === "login" ? "Welcome back" : "Create your account"}</h2>
+            <p>{isResetMode ? "Choose a new password for your ConnectHub account." : mode === "login" ? "Log in to continue your journey." : "Join ConnectHub and start connecting today."}</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate={false}>
-            {mode === "signup" && <div className="field-grid">
+            {mode === "signup" && !isResetMode && <div className="field-grid">
               <div className="field-group"><label htmlFor="fullName">Full name</label><div className="input-wrap"><Users size={16} /><input id="fullName" name="fullName" autoComplete="name" placeholder="Enter your full name" value={fullName} onChange={e => setFullName(e.target.value)} required maxLength={80} /></div></div>
               <div className="field-group"><label htmlFor="signupEmail">Email address</label><div className="input-wrap"><Mail size={16} /><input id="signupEmail" name="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required /></div></div>
               <div className="field-group"><label htmlFor="mobile">Mobile number</label><div className="input-wrap"><span className="country-code">🇮🇳 +91</span><input id="mobile" name="mobile" type="tel" autoComplete="tel-national" inputMode="numeric" placeholder="Enter mobile number" value={mobile} onChange={e => setMobile(e.target.value.replace(/[^0-9]/g, "").slice(0, 10))} required minLength={10} maxLength={10} /></div></div>
@@ -219,24 +243,24 @@ export default function App() {
               <div className="field-group field-full"><label htmlFor="city">City</label><div className="select-wrap"><MapPin size={16} /><select id="city" name="city" value={city} onChange={e => setCity(e.target.value)} required disabled={!stateName}><option value="">{stateName ? "Select your city" : "Select a state first"}</option>{(citiesByState[stateName] || []).map(item => <option key={item} value={item}>{item}</option>)}</select><ChevronDown size={15} /></div><small className="field-hint">Cities shown for your selected state.</small></div>
             </div>}
 
-            {mode === "login" && <div className="field-group"><label htmlFor="email">Email address</label><div className="input-wrap"><Mail size={17} /><input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required /></div></div>}
+            {mode === "login" && !isResetMode && <div className="field-group"><label htmlFor="email">Email address</label><div className="input-wrap"><Mail size={17} /><input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required /></div></div>}
 
             <div className={`field-group ${mode === "signup" ? "field-grid-password" : ""}`}>
-              <div className="label-row"><label htmlFor="password">Password</label>{mode === "login" && <button className="link-button tiny" type="button" onClick={handleForgotPassword}>Forgot password?</button>}</div>
-              <div className="input-wrap password-wrap"><LockKeyhole size={16} /><input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder={mode === "login" ? "Enter your password" : "Create a password"} value={password} onChange={e => setPassword(e.target.value)} required minLength={6} /><button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>
+              <div className="label-row"><label htmlFor="password">Password</label>{mode === "login" && !isResetMode && <button className="link-button tiny" type="button" onClick={handleForgotPassword}>Forgot password?</button>}</div>
+              <div className="input-wrap password-wrap"><LockKeyhole size={16} /><input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete={mode === "login" ? "current-password" : "new-password"} placeholder={isResetMode ? "Enter your new password" : mode === "login" ? "Enter your password" : "Create a password"} value={password} onChange={e => setPassword(e.target.value)} required minLength={6} /><button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword(v => !v)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>
             </div>
 
-            {mode === "signup" && <div className="field-group"><label htmlFor="confirmPassword">Confirm password</label><div className="input-wrap password-wrap"><LockKeyhole size={16} /><input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" placeholder="Confirm your password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={6} /><button type="button" className="password-toggle" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"} onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></div>}
+            {(mode === "signup" || isResetMode) && <div className="field-group"><label htmlFor="confirmPassword">Confirm password</label><div className="input-wrap password-wrap"><LockKeyhole size={16} /><input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" placeholder="Confirm your password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={6} /><button type="button" className="password-toggle" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"} onClick={() => setShowConfirmPassword(v => !v)}>{showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></div>}
 
-            {mode === "login" && <label className="remember-row"><input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} /><span>Remember me</span></label>}
-            {mode === "signup" && <label className="terms-row"><input type="checkbox" required /><span>I agree to the <a href="#terms" onClick={e => e.preventDefault()}>Terms of Service</a> and <a href="#privacy" onClick={e => e.preventDefault()}>Privacy Policy</a></span></label>}
+            {mode === "login" && !isResetMode && <label className="remember-row"><input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} /><span>Remember me</span></label>}
+            {mode === "signup" && !isResetMode && <label className="terms-row"><input type="checkbox" required /><span>I agree to the <a href="#terms" onClick={e => e.preventDefault()}>Terms of Service</a> and <a href="#privacy" onClick={e => e.preventDefault()}>Privacy Policy</a></span></label>}
 
             {message && <div className={`form-message ${messageType}`} role="status">{message}</div>}
-            <button className="submit-button" type="submit" disabled={loading}><span>{loading ? (mode === "login" ? "Logging in..." : "Creating account...") : (mode === "login" ? "Log In" : "Create Account")}</span>{!loading && <ArrowRight size={18} />}</button>
+            <button className="submit-button" type="submit" disabled={loading}><span>{loading ? (isResetMode ? "Updating password..." : mode === "login" ? "Logging in..." : "Creating account...") : (isResetMode ? "Reset Password" : mode === "login" ? "Log In" : "Create Account")}</span>{!loading && <ArrowRight size={18} />}</button>
           </form>
 
-          {mode === "login" && <><div className="divider-label"><span />or continue with<span /></div><div className="social-row"><button type="button" className="social-button" onClick={() => { setMessageType("info"); setMessage("Google sign-in can be enabled when we configure the provider in Supabase."); }}><b className="google-g">G</b> Google</button><button type="button" className="social-button" onClick={() => { setMessageType("info"); setMessage("Apple sign-in can be enabled when we configure the provider in Supabase."); }}><span className="apple-mark">●</span> Apple</button></div></>}
-          {mode === "signup" && <p className="signin-prompt">Already have an account? <button type="button" className="link-button" onClick={() => switchMode("login")}>Log in</button></p>}
+          {mode === "login" && !isResetMode && <><div className="divider-label"><span />or continue with<span /></div><div className="social-row"><button type="button" className="social-button" onClick={() => { setMessageType("info"); setMessage("Google sign-in can be enabled when we configure the provider in Supabase."); }}><b className="google-g">G</b> Google</button><button type="button" className="social-button" onClick={() => { setMessageType("info"); setMessage("Apple sign-in can be enabled when we configure the provider in Supabase."); }}><span className="apple-mark">●</span> Apple</button></div></>}
+          {mode === "signup" && !isResetMode && <p className="signin-prompt">Already have an account? <button type="button" className="link-button" onClick={() => switchMode("login")}>Log in</button></p>}
         </div>
         <footer className="form-footer"><span>© 2026 ConnectHub</span><span><ShieldCheck size={14} /> Your connections start safely</span></footer>
       </section>

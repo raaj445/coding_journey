@@ -273,17 +273,20 @@ export default function App() {
           {legalPage === "terms" ? <>
             <h3>1. What ConnectHub does</h3>
             <p>ConnectHub is a platform that helps people who need something connect with people who may be able to provide it. We primarily facilitate connections between users; we do not ourselves sell tickets, goods, or services listed by users.</p>
-            <h3>2. Deals and bargaining are between users</h3>
-            <p>Any price negotiation, bargaining, payment, exchange, delivery, meeting, or final transaction is decided directly between the users involved. ConnectHub does not set or guarantee a user's price and is not a party to user-to-user deals. Please verify listings and details before agreeing to a transaction.</p>
-            <h3>3. Contact information is not shared by ConnectHub</h3>
+            <h3>2. ConnectHub does not buy or sell</h3>
+            <p>ConnectHub does not buy, sell, issue, or own tickets or other items listed by users. We only help users connect with one another. Any purchase, sale, payment, or exchange is arranged directly between the users.</p>
+            <h3>3. Meet the ticket seller and check before buying</h3>
+            <p>If you want to buy a ticket, meet the user selling it whenever possible and carefully check the ticket details and available proof before paying or accepting it. Make your own decision only after you are satisfied with what you have checked. Do not rely on ConnectHub as the seller or as a guarantor of the ticket. The buyer and seller are responsible for their own transaction.</p>
+            <h3>4. Deals and bargaining are between users</h3>
+            <p>Any price negotiation, bargaining, payment, exchange, delivery, meeting, or final transaction is decided directly between the users involved. ConnectHub does not set the price and is not a party to user-to-user deals.</p>
+            <h3>5. Contact information is not shared by ConnectHub</h3>
             <p>ConnectHub does not disclose or share your private contact details with another user on your behalf without your action or permission, except where required by law or necessary to protect the platform and its users. If you choose to share your phone number, email, or other contact details with another user, you do so voluntarily and at your own discretion.</p>
-            <h3>4. User responsibility and safety</h3>
+            <h3>6. User responsibility and safety</h3>
             <p>Users are responsible for the accuracy of their listings, their communications, and any decision to transact or share information. Do not share passwords, OTPs, financial credentials, or unnecessary personal information. Be cautious of fraud and report suspicious activity.</p>
-            <h3>5. No guarantee of user transactions</h3>
-            <p>ConnectHub helps users discover one another but does not guarantee that a listing, user, ticket, product, payment, or transaction is genuine, completed, or dispute-free. To the extent permitted by applicable law, users are responsible for resolving their arrangements with each other.</p>
-            <h3>6. Acceptable use</h3>
+            
+            <h3>7. Acceptable use</h3>
             <p>Do not post misleading, illegal, fraudulent, unsafe, or unauthorised listings, or misuse another person's information. We may restrict content or accounts that violate these rules or applicable law.</p>
-            <h3>7. Updates</h3>
+            <h3>8. Updates</h3>
             <p>We may update these terms as the service develops. Continued use after an update means you acknowledge the updated terms, subject to applicable law.</p>
           </> : <>
             <h3>Information you provide</h3>

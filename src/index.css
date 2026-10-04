@@ -83,3 +83,14 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 
 /* Password reset form spacing */
 .auth-layout.login-mode .auth-card .field-group{margin-bottom:18px}
+
+
+/* Terms of Service and Privacy Policy dialog */
+.legal-overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(17,12,45,.62);backdrop-filter:blur(5px)}
+.legal-dialog{position:relative;width:min(100%,680px);max-height:min(82vh,760px);overflow:auto;padding:30px;border:1px solid #e5e0f5;border-radius:18px;background:#fff;box-shadow:0 24px 80px #10072e55;color:var(--ink)}
+.legal-dialog h2{margin:8px 36px 20px 0;font:800 28px/1.2 "Manrope",sans-serif;letter-spacing:-.8px}
+.legal-dialog h3{margin:20px 0 6px;font-size:13px;color:#30245f}
+.legal-dialog p{margin:0;color:#62647d;font-size:12px;line-height:1.75}
+.legal-close{position:absolute;right:18px;top:14px;width:34px;height:34px;border:0;border-radius:50%;background:#f2efff;color:#4f32bb;font-size:26px;line-height:1}
+.legal-done{max-width:190px;margin-top:24px}
+@media(max-width:520px){.legal-overlay{padding:12px}.legal-dialog{padding:23px 18px;border-radius:14px;max-height:88vh}.legal-dialog h2{font-size:24px}.legal-dialog p{font-size:11px}}

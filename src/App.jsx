@@ -174,6 +174,32 @@ export default function App() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    if (!isSupabaseConfigured || !supabase) {
+      setMessageType("error");
+      setMessage("Supabase is not connected yet. Check your Vercel environment variables.");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      setMessageType("error");
+      setMessage(error.message || "Google sign-in failed. Please try again.");
+      setLoading(false);
+    }
+  }
+
   return (
     <main className={`auth-layout ${mode === "signup" && !isResetMode ? "signup-mode" : "login-mode"}`}>
       <section className="visual-panel" aria-label="ConnectHub community">
@@ -260,7 +286,7 @@ export default function App() {
             <button className="submit-button" type="submit" disabled={loading}><span>{loading ? (isResetMode ? "Updating password..." : mode === "login" ? "Logging in..." : "Creating account...") : (isResetMode ? "Reset Password" : mode === "login" ? "Log In" : "Create Account")}</span>{!loading && <ArrowRight size={18} />}</button>
           </form>
 
-          {mode === "login" && !isResetMode && <><div className="divider-label"><span />or continue with<span /></div><div className="social-row"><button type="button" className="social-button" onClick={() => { setMessageType("info"); setMessage("Google sign-in can be enabled when we configure the provider in Supabase."); }}><b className="google-g">G</b> Google</button><button type="button" className="social-button" onClick={() => { setMessageType("info"); setMessage("Apple sign-in can be enabled when we configure the provider in Supabase."); }}><span className="apple-mark">●</span> Apple</button></div></>}
+          {mode === "login" && !isResetMode && <><div className="divider-label"><span />or continue with<span /></div><div className="social-row"><button type="button" className="social-button" onClick={handleGoogleSignIn} disabled={loading}><b className="google-g">G</b> Google</button><button type="button" className="social-button" onClick={() => { setMessageType("info"); setMessage("Apple sign-in can be enabled when we configure the provider in Supabase."); }}><span className="apple-mark">●</span> Apple</button></div></>}
           {mode === "signup" && !isResetMode && <p className="signin-prompt">Already have an account? <button type="button" className="link-button" onClick={() => switchMode("login")}>Log in</button></p>}
         </div>
         <footer className="form-footer"><span>© 2026 ConnectHub</span><span><ShieldCheck size={14} /> Your connections start safely</span></footer>

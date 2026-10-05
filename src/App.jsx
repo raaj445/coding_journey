@@ -53,14 +53,122 @@ const citiesByState = {
 };
 
 
+function CreateListingPage({ onBack }) {
+  const [ticketCount, setTicketCount] = useState(3);
+  const [tickets, setTickets] = useState([
+    { status: "Confirmed", details: "S5 / 42 / Lower" },
+    { status: "Confirmed", details: "S5 / 43 / Upper" },
+    { status: "RAC", details: "RAC 18" },
+  ]);
+  const [samePrice, setSamePrice] = useState(true);
+  const [price, setPrice] = useState("1500");
+  const [bargain, setBargain] = useState(true);
+
+  function changeTicketCount(next) {
+    const count = Math.max(1, Math.min(10, next));
+    setTicketCount(count);
+    setTickets(current => Array.from({ length: count }, (_, index) =>
+      current[index] || { status: "Confirmed", details: "" }
+    ));
+  }
+
+  function updateTicket(index, field, value) {
+    setTickets(current => current.map((ticket, i) => i === index ? { ...ticket, [field]: value } : ticket));
+  }
+
+  const confirmed = tickets.filter(ticket => ticket.status === "Confirmed").length;
+  const rac = tickets.filter(ticket => ticket.status === "RAC").length;
+
+  return (
+    <section className="create-listing-page">
+      <div className="create-listing-content">
+        <div className="create-page-header">
+          <div>
+            <button className="back-link" onClick={onBack}><ArrowRight size={15} className="back-arrow" /> Back to Dashboard</button>
+            <h1>Create Train Ticket Listing</h1>
+            <p>Fill in the details below to list your train ticket for sale.</p>
+          </div>
+          <span className="listing-step-badge"><Ticket size={15} /> Train Ticket</span>
+        </div>
+
+        <section className="listing-form-card">
+          <div className="listing-section-title"><span>1</span><div><h2>Journey Details</h2><p>Choose the route, date and train.</p></div></div>
+          <div className="listing-field-grid">
+            <label className="listing-field"><span>From Station <i>*</i></span><div className="listing-input"><MapPin size={16} /><input defaultValue="New Delhi (NDLS)" placeholder="Search station..." /></div></label>
+            <label className="listing-field"><span>To Station <i>*</i></span><div className="listing-input"><MapPin size={16} /><input defaultValue="Howrah Jn (HWH)" placeholder="Search station..." /></div></label>
+            <label className="listing-field"><span>Journey Date <i>*</i></span><div className="listing-input"><Ticket size={16} /><input type="date" defaultValue="2026-10-05" /></div></label>
+            <label className="listing-field"><span>Train <i>*</i></span><div className="listing-input"><Search size={16} /><input defaultValue="12301 - Rajdhani Express" placeholder="Search train..." /></div>
+              <div className="train-suggestion"><b>12301 - Rajdhani Express</b><span>New Delhi (NDLS) → Howrah Jn (HWH)</span><small>Departure: 04:00 PM &nbsp;•&nbsp; Duration: ~17h 50m</small></div>
+            </label>
+          </div>
+        </section>
+
+        <section className="listing-form-card">
+          <div className="listing-section-title"><span>2</span><div><h2>Ticket Details</h2><p>Only Confirmed and RAC tickets can be listed.</p></div></div>
+          <div className="ticket-count-row"><span>Number of Tickets <i>*</i></span><div className="stepper"><button onClick={() => changeTicketCount(ticketCount - 1)}>−</button><b>{ticketCount}</b><button onClick={() => changeTicketCount(ticketCount + 1)}>+</button></div></div>
+          <div className="ticket-detail-list">
+            {tickets.map((ticket, index) => (
+              <div className="listing-ticket-row" key={index}>
+                <strong>Ticket {index + 1}</strong>
+                <label><span>Status <i>*</i></span><select value={ticket.status} onChange={e => updateTicket(index, "status", e.target.value)}><option>Confirmed</option><option>RAC</option></select></label>
+                <label><span>{ticket.status === "RAC" ? "RAC Number" : "Coach / Seat / Berth"} <i>*</i></span><input value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)} placeholder={ticket.status === "RAC" ? "e.g. RAC 18" : "e.g. S5 / 42 / Lower"} /></label>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="listing-form-card">
+          <div className="listing-section-title"><span>3</span><div><h2>Price Details</h2><p>Choose one price for all tickets or set them individually.</p></div></div>
+          <div className="price-options">
+            <label className={samePrice ? "price-option selected" : "price-option"}><input type="radio" checked={samePrice} onChange={() => setSamePrice(true)} /><span><b>Same price for all tickets</b><small>All tickets will be listed at the same price</small></span></label>
+            <label className={!samePrice ? "price-option selected" : "price-option"}><input type="radio" checked={!samePrice} onChange={() => setSamePrice(false)} /><span><b>Different price for each ticket</b><small>Set individual prices for each ticket</small></span></label>
+          </div>
+          <div className="price-row">
+            <label className="listing-field"><span>Price per ticket <i>*</i></span><div className="listing-input"><b className="rupee-symbol">₹</b><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9]/g, ""))} /></div></label>
+            <div className="listing-field"><span>Ready to Bargain? <i>*</i></span><div className="toggle-choice"><button className={bargain ? "selected" : ""} onClick={() => setBargain(true)}>Yes</button><button className={!bargain ? "selected" : ""} onClick={() => setBargain(false)}>No</button></div></div>
+          </div>
+        </section>
+
+        <section className="listing-form-card">
+          <div className="listing-section-title"><span>4</span><div><h2>Additional Information <em>(Optional)</em></h2><p>Add a short note buyers should know.</p></div></div>
+          <label className="listing-field"><span>Description / Note</span><textarea defaultValue="Unable to travel due to personal reasons. Tickets are confirmed/RAC as mentioned." maxLength={500} /></label>
+          <div className="listing-actions"><button className="secondary-listing-btn" onClick={onBack}>Cancel</button><button className="primary-listing-btn">Preview Listing <ArrowRight size={16} /></button></div>
+        </section>
+      </div>
+
+      <aside className="listing-preview-column">
+        <div className="listing-preview-card">
+          <div className="preview-heading"><Ticket size={18} /><b>Listing Preview</b></div>
+          <h2>12301 - Rajdhani Express</h2>
+          <p className="preview-route">New Delhi (NDLS) <span>→</span> Howrah Jn (HWH)</p>
+          <div className="preview-meta"><div><Ticket size={15} /><span>Journey Date<b>05 Oct 2026 (Sun)</b></span></div><div><span className="clock-dot">◷</span><span>Departure Time<b>04:00 PM</b></span></div><div><span className="clock-dot">◷</span><span>Duration<b>~17h 50m</b></span></div></div>
+          <div className="preview-divider" />
+          <div className="preview-subtitle"><Ticket size={16} /> Tickets ({ticketCount})</div>
+          <div className="preview-tickets">{tickets.map((ticket, index) => <div key={index}><span>{index + 1}.</span><b className={ticket.status === "RAC" ? "rac-badge" : "confirmed-badge"}>{ticket.status}</b><strong>{ticket.details || "Details not entered"}</strong></div>)}</div>
+          <div className="preview-divider" />
+          <div className="preview-subtitle">🏷️ Price</div>
+          <div className="preview-price">₹ {Number(price || 0).toLocaleString("en-IN")} <small>per ticket</small></div>
+          {bargain && <span className="bargain-badge">Bargain Available</span>}
+        </div>
+        <div className="important-notes">
+          <b><span>i</span> Important Notes</b>
+          <ul><li>Only Confirmed or RAC tickets can be listed.</li><li>Waiting tickets are not allowed.</li><li>The listing automatically expires at the train's scheduled departure time.</li><li>No ticket upload is required.</li><li>{confirmed} Confirmed · {rac} RAC in this listing.</li></ul>
+        </div>
+      </aside>
+    </section>
+  );
+}
+
+
 function Dashboard({ user, onLogout }) {
   const [activeNav, setActiveNav] = useState("Home");
   const [search, setSearch] = useState("");
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Amartya";
   const firstName = name.split(" ")[0];
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+  if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} />;
   const navItems = [
-    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Find People", icon: Users },
+    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Find People", icon: Users },
     { label: "Communities", icon: HeartHandshake }, { label: "Messages", icon: MessageCircle }, { label: "My Listings", icon: Ticket },
     { label: "Bookmarks", icon: Bookmark }, { label: "Profile", icon: UserRound }, { label: "Settings", icon: Settings },
   ];
@@ -89,7 +197,7 @@ function Dashboard({ user, onLogout }) {
         <div className="dashboard-brand"><span className="dashboard-logo"><Users size={20} fill="currentColor" /></span><span>Connect<span>Hub</span></span></div>
         <div className="dashboard-search top-search"><Search size={18} /><input placeholder="Search tickets, people, events, locations..." value={search} onChange={e => setSearch(e.target.value)} /></div>
         <div className="top-actions">
-          <button className="post-button"><Plus size={17} /> Post</button>
+          <button className="post-button" onClick={() => setActiveNav("Create Listing")}><Plus size={17} /> Post</button>
           <button className="icon-button" aria-label="Messages"><MessageCircle size={20} /></button>
           <button className="icon-button notification-button" aria-label="Notifications"><Bell size={20} /><i /></button>
           <button className="profile-mini"><span className="avatar">{avatar ? <img src={avatar} alt="" /> : <UserRound size={18} />}</span><b>{firstName}</b><ChevronDown size={16} /></button>
@@ -118,7 +226,7 @@ function Dashboard({ user, onLogout }) {
               <button className="quick-card lavender"><span><Ticket size={23} /></span><div><b>Find Tickets</b><small>Concerts, Movies, Trains</small></div><ArrowRight size={18} /></button>
               <button className="quick-card pink"><span><Users size={23} /></span><div><b>Find People</b><small>Roommates, Friends</small></div><ArrowRight size={18} /></button>
               <button className="quick-card green"><span><Users size={23} /></span><div><b>Explore Communities</b><small>Join groups & interests</small></div><ArrowRight size={18} /></button>
-              <button className="quick-card yellow"><span><Plus size={23} /></span><div><b>Create a Listing</b><small>Sell or find what you need</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card yellow" onClick={() => setActiveNav("Create Listing")}><span><Plus size={23} /></span><div><b>Create a Listing</b><small>Sell or find what you need</small></div><ArrowRight size={18} /></button>
             </div>
           </section>
 

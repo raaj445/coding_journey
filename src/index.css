@@ -116,6 +116,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 
 
 /* Create train listing - modern marketplace design */
+.station-picker-field{position:relative}.station-picker{position:relative}.station-suggestions{position:absolute;z-index:30;top:calc(100% + 5px);left:0;right:0;max-height:260px;overflow:auto;padding:6px;border:1px solid #deddea;border-radius:10px;background:#fff;box-shadow:0 12px 28px #27234b18}.station-suggestions button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:9px 10px;border:0;border-radius:7px;background:#fff;text-align:left;cursor:pointer}.station-suggestions button:hover{background:#f2efff}.station-suggestions button b{font-size:11px;color:#272942}.station-suggestions button span{font-size:9px;color:#808296;white-space:nowrap}.station-empty{padding:12px 10px;color:#808296;font-size:10px}
 .listing-app-shell{min-height:100vh;background:#f8f8fc;color:#17182f;font-family:"DM Sans",sans-serif}
 .listing-topbar{height:58px;display:flex;align-items:center;gap:28px;padding:0 30px;background:#fff;border-bottom:1px solid #ececf3;position:sticky;top:0;z-index:20}
 .listing-brand{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:#12142e;font:800 20px "Manrope",sans-serif;letter-spacing:-.7px;white-space:nowrap;cursor:pointer}.listing-brand>span:last-child{color:#6336ec}

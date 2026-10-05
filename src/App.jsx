@@ -110,9 +110,21 @@ function CreateListingPage({ onBack }) {
             {tickets.map((ticket, index) => (
               <div className="listing-ticket-row" key={index}>
                 <strong>Ticket {index + 1}</strong>
-                <label><span>Gender <i>*</i></span><select value={ticket.gender || "Male"} onChange={e => updateTicket(index, "gender", e.target.value)}><option>Male</option><option>Female</option></select></label>
+                <label><span>Gender <i>*</i></span><select value={ticket.gender || "Male"} onChange={e => updateTicket(index, "gender", e.target.value)}><option>Male</option><option>Female</option><option>Other</option></select></label>
                 <label><span>Status <i>*</i></span><select value={ticket.status} onChange={e => updateTicket(index, "status", e.target.value)}><option>Confirmed</option><option>RAC</option></select></label>
-                <label><span>{ticket.status === "RAC" ? "RAC Number" : "Coach / Seat / Berth"} <i>*</i></span><input value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)} placeholder={ticket.status === "RAC" ? "e.g. RAC 18" : "e.g. S5 / 42 / Lower"} /></label>
+                {ticket.status === "RAC" ? (
+                  <label><span>RAC Number <i>*</i></span><input value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)} placeholder="e.g. RAC 18" /></label>
+                ) : (
+                  <label><span>Seat / Berth <i>*</i></span><select value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)}>
+                    <option value="">Select seat / berth</option>
+                    <option>S5 / 42 / Lower</option>
+                    <option>S5 / 43 / Upper</option>
+                    <option>S5 / 44 / Middle</option>
+                    <option>S6 / 18 / Side Lower</option>
+                    <option>S6 / 19 / Side Upper</option>
+                    <option>Other</option>
+                  </select></label>
+                )}
               </div>
             ))}
           </div>

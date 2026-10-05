@@ -79,117 +79,107 @@ function CreateListingPage({ onBack }) {
   const confirmed = tickets.filter(ticket => ticket.status === "Confirmed").length;
   const rac = tickets.filter(ticket => ticket.status === "RAC").length;
 
+  const ticketTypeOptions = ["General / Unreserved","Sleeper (SL)","AC 3 Tier (3A)","AC 3 Economy (3E)","AC 2 Tier (2A)","First AC (1A)","AC Chair Car (CC)","Executive Chair Car (EC)","Second Sitting (2S)","Vistadome","Other"];
+
+  function berthOptions(type) {
+    if (["Sleeper (SL)","AC 3 Tier (3A)","AC 3 Economy (3E)","AC 2 Tier (2A)"].includes(type)) return ["Lower","Middle","Upper","Side Lower","Side Upper"];
+    if (type === "First AC (1A)") return ["Lower","Upper"];
+    if (["AC Chair Car (CC)","Executive Chair Car (EC)"].includes(type)) return ["Window","Aisle"];
+    if (["General / Unreserved","Second Sitting (2S)"].includes(type)) return ["Window","Middle","Aisle","Other"];
+    return ["Lower","Middle","Upper","Side Lower","Side Upper","Window","Aisle","Other"];
+  }
+
   return (
-    <section className="create-listing-page">
-      <div className="create-listing-content">
-        <div className="create-page-header">
-          <div>
-            <button className="back-link" onClick={onBack}><ArrowRight size={15} className="back-arrow" /> Back to Dashboard</button>
+    <main className="listing-app-shell">
+      <header className="listing-topbar">
+        <button className="listing-brand" onClick={onBack}><span className="listing-brand-mark"><Users size={18} /></span>Connect<span>Hub</span></button>
+        <div className="listing-top-search"><Search size={16}/><input placeholder="Search for roommates, tickets, or anything..." /></div>
+        <button className="listing-browse">Browse</button>
+        <button className="listing-post-top" onClick={() => window.scrollTo({top:0,behavior:"smooth"})}>Post Listing</button>
+        <button className="listing-bell" aria-label="Notifications"><Bell size={19}/></button>
+        <span className="listing-user-avatar">A</span>
+      </header>
+
+      <div className="listing-layout">
+        <aside className="listing-left-nav">
+          <button className="listing-nav-item muted" onClick={onBack}><Home size={18}/><span>Roommate / Flatmate<small>Coming Soon</small></span></button>
+          <button className="listing-nav-item active"><Ticket size={18}/><span>Train Ticket</span></button>
+          <button className="listing-nav-item"><Ticket size={18}/><span>Movie Ticket</span></button>
+          <button className="listing-nav-item"><Music2 size={18}/><span>Concert Ticket</span></button>
+        </aside>
+
+        <section className="listing-main-column">
+          <div className="listing-page-title">
             <h1>Create Train Ticket Listing</h1>
-            <p>Fill in the details below to list your train ticket for sale.</p>
+            <p>List your confirmed or RAC train tickets and find genuine buyers.</p>
           </div>
-          <span className="listing-step-badge"><Ticket size={15} /> Train Ticket</span>
-        </div>
 
-        <section className="listing-form-card">
-          <div className="listing-section-title"><span>1</span><div><h2>Journey Details</h2><p>Choose the route, date and train.</p></div></div>
-          <div className="listing-field-grid">
-            <label className="listing-field"><span>From Station <i>*</i></span><div className="listing-input"><MapPin size={16} /><input defaultValue="New Delhi (NDLS)" placeholder="Search station..." /></div></label>
-            <label className="listing-field"><span>To Station <i>*</i></span><div className="listing-input"><MapPin size={16} /><input defaultValue="Howrah Jn (HWH)" placeholder="Search station..." /></div></label>
-            <label className="listing-field"><span>Journey Date <i>*</i></span><div className="listing-input"><Ticket size={16} /><input type="date" defaultValue="2026-10-05" /></div></label>
-            <label className="listing-field"><span>Train <i>*</i></span><div className="listing-input"><Search size={16} /><input defaultValue="12301 - Rajdhani Express" placeholder="Search train..." /></div>
-              <div className="train-suggestion"><b>12301 - Rajdhani Express</b><span>New Delhi (NDLS) → Howrah Jn (HWH)</span><small>Departure: 04:00 PM &nbsp;•&nbsp; Duration: ~17h 50m</small></div>
-            </label>
-          </div>
+          <section className="listing-modern-card">
+            <div className="modern-section-head"><span>1</span><div><h2>Journey Details</h2><p>Enter your train journey information</p></div></div>
+            <div className="journey-grid">
+              <label className="modern-field"><span>From Station <i>*</i></span><div className="modern-input"><input defaultValue="New Delhi (NDLS)" /><MapPin size={16}/></div></label>
+              <label className="modern-field"><span>To Station <i>*</i></span><div className="modern-input"><input defaultValue="Howrah (HWH)" /><MapPin size={16}/></div></label>
+              <label className="modern-field"><span>Journey Date <i>*</i></span><div className="modern-input"><input type="date" defaultValue="2026-10-20" /><Ticket size={16}/></div></label>
+              <label className="modern-field train-search-field"><span>Train <em>(Optional)</em></span><div className="modern-input"><Search size={16}/><input defaultValue="12301 - Rajdhani Express" /></div></label>
+            </div>
+            <div className="expiry-strip"><span className="expiry-icon">◷</span><div><b>Listing will automatically expire at train departure time</b><small>Departure: 04:00 PM&nbsp; • &nbsp;Duration: ~17h 50m</small></div></div>
+          </section>
+
+          <section className="listing-modern-card">
+            <div className="modern-section-head ticket-head"><span>2</span><div><h2>Ticket Details</h2><p>Only Confirmed and RAC tickets can be listed.</p></div><div className="ticket-counter"><b>Number of Tickets</b><div><button onClick={() => changeTicketCount(ticketCount-1)}>−</button><strong>{ticketCount}</strong><button onClick={() => changeTicketCount(ticketCount+1)}>+</button></div></div></div>
+            <div className="modern-ticket-list">
+              {tickets.map((ticket,index) => (
+                <div className="modern-ticket-row" key={index}>
+                  <div className="modern-ticket-number"><span>▦</span><b>Ticket {index+1}</b></div>
+                  <label className="modern-field"><span>Ticket Type <i>*</i></span><select value={ticket.ticketType} onChange={e => updateTicket(index,"ticketType",e.target.value)}>{ticketTypeOptions.map(o=><option key={o}>{o}</option>)}</select></label>
+                  <label className="modern-field"><span>Gender <i>*</i></span><select value={ticket.gender} onChange={e => updateTicket(index,"gender",e.target.value)}><option>Male</option><option>Female</option></select></label>
+                  <label className="modern-field"><span>Status <i>*</i></span><select value={ticket.status} onChange={e => updateTicket(index,"status",e.target.value)}><option>Confirmed</option><option>RAC</option></select></label>
+                  {ticket.status==="RAC" ? (
+                    <label className="modern-field"><span>RAC Number <i>*</i></span><input value={ticket.details} onChange={e=>updateTicket(index,"details",e.target.value)} placeholder="e.g. 18" /></label>
+                  ) : (
+                    <label className="modern-field"><span>Seat / Berth Type <i>*</i></span><select value={ticket.details} onChange={e=>updateTicket(index,"details",e.target.value)}><option value="">Select type</option>{berthOptions(ticket.ticketType).map(o=><option key={o}>{o}</option>)}</select></label>
+                  )}
+                  <button className="ticket-delete" aria-label={"Remove ticket "+(index+1)} onClick={() => changeTicketCount(ticketCount-1)}>×</button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="listing-modern-card">
+            <div className="modern-section-head"><span>3</span><div><h2>Price Details</h2><p>Choose one price for all tickets or set different prices individually.</p></div></div>
+            <div className="price-choice-grid">
+              <label className={samePrice ? "modern-price-choice selected" : "modern-price-choice"}><input type="radio" checked={samePrice} onChange={()=>setSamePrice(true)}/><span><b>Same price for all tickets</b><small>All tickets will be listed at the same price</small></span></label>
+              <label className={!samePrice ? "modern-price-choice selected" : "modern-price-choice"}><input type="radio" checked={!samePrice} onChange={()=>setSamePrice(false)}/><span><b>Different price for each ticket</b><small>Set individual prices for each ticket</small></span></label>
+            </div>
+            <div className="modern-price-row"><label className="modern-field"><span>Price per ticket <i>*</i></span><div className="price-input"><b>₹</b><input value={price} onChange={e=>setPrice(e.target.value.replace(/[^0-9]/g,""))}/></div></label><div className="bargain-control"><div><b>Ready to Bargain</b><small>Buyers can send you offers</small></div><button className={bargain?"on":""} onClick={()=>setBargain(!bargain)}><span/></button></div></div>
+          </section>
+
+          <section className="listing-modern-card additional-card">
+            <div className="modern-section-head"><span>4</span><div><h2>Additional Information <em>(Optional)</em></h2><p>Add a short note buyers should know.</p></div><small className="char-count">0/500</small></div>
+            <label className="modern-field"><span>Description / Note</span><textarea defaultValue="Selling confirmed/RAC tickets for New Delhi to Howrah. Genuine buyers only. DM for more details." maxLength={500}/></label>
+            <div className="modern-actions"><button onClick={onBack}>Cancel</button><button className="modern-primary">Post Listing <ArrowRight size={15}/></button></div>
+          </section>
         </section>
 
-        <section className="listing-form-card">
-          <div className="listing-section-title"><span>2</span><div><h2>Ticket Details</h2><p>Only Confirmed and RAC tickets can be listed.</p></div></div>
-          <div className="ticket-count-row"><span>Number of Tickets <i>*</i></span><div className="stepper"><button onClick={() => changeTicketCount(ticketCount - 1)}>−</button><b>{ticketCount}</b><button onClick={() => changeTicketCount(ticketCount + 1)}>+</button></div></div>
-          <div className="ticket-detail-list">
-            {tickets.map((ticket, index) => (
-              <div className="listing-ticket-row" key={index}>
-                <strong>Ticket {index + 1}</strong>
-                <label><span>Ticket Type <i>*</i></span><select value={ticket.ticketType || "Sleeper (SL)"} onChange={e => updateTicket(index, "ticketType", e.target.value)}>
-                  <option>General / Unreserved</option>
-                  <option>Sleeper (SL)</option>
-                  <option>AC 3 Tier (3A)</option>
-                  <option>AC 3 Economy (3E)</option>
-                  <option>AC 2 Tier (2A)</option>
-                  <option>First AC (1A)</option>
-                  <option>AC Chair Car (CC)</option>
-                  <option>Executive Chair Car (EC)</option>
-                  <option>Second Sitting (2S)</option>
-                  <option>Vistadome</option>
-                  <option>Other</option>
-                </select></label>
-                <label><span>Gender <i>*</i></span><select value={ticket.gender || "Male"} onChange={e => updateTicket(index, "gender", e.target.value)}><option>Male</option><option>Female</option></select></label>
-                <label><span>Status <i>*</i></span><select value={ticket.status} onChange={e => updateTicket(index, "status", e.target.value)}><option>Confirmed</option><option>RAC</option></select></label>
-                {ticket.status === "RAC" ? (
-                  <label><span>RAC Number <i>*</i></span><input value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)} placeholder="e.g. RAC 18" /></label>
-                ) : (
-                  <label><span>Seat / Berth Type <i>*</i></span><select value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)}>
-                    <option value="">Select type</option>
-                    {ticket.ticketType === "Sleeper (SL)" || ticket.ticketType === "AC 3 Tier (3A)" || ticket.ticketType === "AC 3 Economy (3E)" || ticket.ticketType === "AC 2 Tier (2A)" ? <>
-                      <option>Lower</option><option>Middle</option><option>Upper</option><option>Side Lower</option><option>Side Upper</option>
-                    </> : ticket.ticketType === "First AC (1A)" ? <>
-                      <option>Lower</option><option>Upper</option>
-                    </> : ticket.ticketType === "AC Chair Car (CC)" || ticket.ticketType === "Executive Chair Car (EC)" ? <>
-                      <option>Window</option><option>Aisle</option>
-                    </> : ticket.ticketType === "General / Unreserved" || ticket.ticketType === "Second Sitting (2S)" ? <>
-                      <option>Window</option><option>Middle</option><option>Aisle</option><option>Other</option>
-                    </> : <>
-                      <option>Lower</option><option>Middle</option><option>Upper</option><option>Side Lower</option><option>Side Upper</option><option>Window</option><option>Aisle</option><option>Other</option>
-                    </>}
-                  </select></label>
-                )}
-              </div>
-            ))}
+        <aside className="listing-right-column">
+          <div className="preview-title"><span className="preview-brand-icon">C</span><div><b>Listing Preview</b><small>This is how your listing will appear to others</small></div></div>
+          <div className="modern-preview-card">
+            <div className="preview-image-wrap"><img src="https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=1000&q=85" alt="Train" /><span className="active-listing">● Active Listing</span><button>Edit</button></div>
+            <div className="preview-route-row"><div><h3>New Delhi (NDLS) → Howrah (HWH)</h3><p>◷ &nbsp;20 Oct 2026 &nbsp;•&nbsp; 04:00 PM</p><p>▣ &nbsp;Train details shared on chat</p></div><strong>₹ {Number(price||0).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
+            <div className="preview-pills"><span>{ticketCount} Tickets</span>{bargain&&<span className="bargain-pill">Bargain Available</span>}</div>
+            <div className="preview-separator"/>
+            <h4 className="preview-block-title">♢ &nbsp; Tickets</h4>
+            <div className="preview-modern-tickets">{tickets.map((ticket,index)=><div className="preview-modern-ticket" key={index}><span className="preview-number">{index+1}</span><div><b>{ticket.ticketType}</b><section><small>{ticket.gender}</small><small className={ticket.status==="RAC"?"preview-rac":"preview-confirmed"}>{ticket.status}</small><small>{ticket.status==="RAC" ? "RAC "+(ticket.details||"") : ticket.details||"Seat type"}</small></section></div></div>)}</div>
+            <div className="preview-separator"/>
+            <div className="about-listing"><h4>▣ &nbsp; About this listing</h4><p>Selling {ticketCount} {confirmed===ticketCount?"confirmed":confirmed+" confirmed"} tickets for New Delhi to Howrah. Genuine buyers only. DM for more details.</p></div>
+            <div className="preview-expiry"><b>◷ &nbsp; This listing will expire automatically</b><small>At the train's scheduled departure time<br/>20 Oct 2026, 04:00 PM</small></div>
+            <button className="preview-post-button">Post Listing</button>
           </div>
-        </section>
-
-        <section className="listing-form-card">
-          <div className="listing-section-title"><span>3</span><div><h2>Price Details</h2><p>Choose one price for all tickets or set them individually.</p></div></div>
-          <div className="price-options">
-            <label className={samePrice ? "price-option selected" : "price-option"}><input type="radio" checked={samePrice} onChange={() => setSamePrice(true)} /><span><b>Same price for all tickets</b><small>All tickets will be listed at the same price</small></span></label>
-            <label className={!samePrice ? "price-option selected" : "price-option"}><input type="radio" checked={!samePrice} onChange={() => setSamePrice(false)} /><span><b>Different price for each ticket</b><small>Set individual prices for each ticket</small></span></label>
-          </div>
-          <div className="price-row">
-            <label className="listing-field"><span>Price per ticket <i>*</i></span><div className="listing-input"><b className="rupee-symbol">₹</b><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9]/g, ""))} /></div></label>
-            <div className="listing-field"><span>Ready to Bargain? <i>*</i></span><div className="toggle-choice"><button className={bargain ? "selected" : ""} onClick={() => setBargain(true)}>Yes</button><button className={!bargain ? "selected" : ""} onClick={() => setBargain(false)}>No</button></div></div>
-          </div>
-        </section>
-
-        <section className="listing-form-card">
-          <div className="listing-section-title"><span>4</span><div><h2>Additional Information <em>(Optional)</em></h2><p>Add a short note buyers should know.</p></div></div>
-          <label className="listing-field"><span>Description / Note</span><textarea defaultValue="Unable to travel due to personal reasons. Tickets are confirmed/RAC as mentioned." maxLength={500} /></label>
-          <div className="listing-actions"><button className="secondary-listing-btn" onClick={onBack}>Cancel</button><button className="primary-listing-btn">Preview Listing <ArrowRight size={16} /></button></div>
-        </section>
+        </aside>
       </div>
-
-      <aside className="listing-preview-column">
-        <div className="listing-preview-card">
-          <div className="preview-heading"><Ticket size={18} /><b>Listing Preview</b></div>
-          <h2>12301 - Rajdhani Express</h2>
-          <p className="preview-route">New Delhi (NDLS) <span>→</span> Howrah Jn (HWH)</p>
-          <div className="preview-meta"><div><Ticket size={15} /><span>Journey Date<b>05 Oct 2026 (Sun)</b></span></div><div><span className="clock-dot">◷</span><span>Departure Time<b>04:00 PM</b></span></div><div><span className="clock-dot">◷</span><span>Duration<b>~17h 50m</b></span></div></div>
-          <div className="preview-divider" />
-          <div className="preview-subtitle"><Ticket size={16} /> Tickets ({ticketCount})</div>
-          <div className="preview-tickets">{tickets.map((ticket, index) => <div className="preview-ticket-item" key={index}><span>{index + 1}.</span><div><b className={ticket.status === "RAC" ? "rac-badge" : "confirmed-badge"}>{ticket.status}</b><strong>{ticket.ticketType || "Ticket type not selected"} · {ticket.details || "Seat type not selected"}</strong><small>{ticket.gender || "Male"}</small></div></div>)}</div>
-          <div className="preview-divider" />
-          <div className="preview-subtitle">🏷️ Price</div>
-          <div className="preview-price">₹ {Number(price || 0).toLocaleString("en-IN")} <small>per ticket</small></div>
-          {bargain && <span className="bargain-badge">Bargain Available</span>}
-        </div>
-        <div className="important-notes">
-          <b><span>i</span> Important Notes</b>
-          <ul><li>Only Confirmed or RAC tickets can be listed.</li><li>Waiting tickets are not allowed.</li><li>The listing automatically expires at the train's scheduled departure time.</li><li>No ticket upload is required.</li><li>{confirmed} Confirmed · {rac} RAC in this listing.</li></ul>
-        </div>
-      </aside>
-    </section>
+    </main>
   );
 }
-
 
 function Dashboard({ user, onLogout }) {
   const [activeNav, setActiveNav] = useState("Home");

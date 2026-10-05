@@ -56,9 +56,9 @@ const citiesByState = {
 function CreateListingPage({ onBack }) {
   const [ticketCount, setTicketCount] = useState(3);
   const [tickets, setTickets] = useState([
-    { status: "Confirmed", details: "S5 / 42 / Lower" },
-    { status: "Confirmed", details: "S5 / 43 / Upper" },
-    { status: "RAC", details: "RAC 18" },
+    { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "Lower" },
+    { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "Upper" },
+    { ticketType: "AC 3 Tier (3A)", gender: "Female", status: "RAC", details: "RAC 18" },
   ]);
   const [samePrice, setSamePrice] = useState(true);
   const [price, setPrice] = useState("1500");
@@ -68,7 +68,7 @@ function CreateListingPage({ onBack }) {
     const count = Math.max(1, Math.min(10, next));
     setTicketCount(count);
     setTickets(current => Array.from({ length: count }, (_, index) =>
-      current[index] || { status: "Confirmed", details: "" }
+      current[index] || { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "" }
     ));
   }
 
@@ -110,19 +110,37 @@ function CreateListingPage({ onBack }) {
             {tickets.map((ticket, index) => (
               <div className="listing-ticket-row" key={index}>
                 <strong>Ticket {index + 1}</strong>
-                <label><span>Gender <i>*</i></span><select value={ticket.gender || "Male"} onChange={e => updateTicket(index, "gender", e.target.value)}><option>Male</option><option>Female</option><option>Other</option></select></label>
+                <label><span>Ticket Type <i>*</i></span><select value={ticket.ticketType || "Sleeper (SL)"} onChange={e => updateTicket(index, "ticketType", e.target.value)}>
+                  <option>General / Unreserved</option>
+                  <option>Sleeper (SL)</option>
+                  <option>AC 3 Tier (3A)</option>
+                  <option>AC 3 Economy (3E)</option>
+                  <option>AC 2 Tier (2A)</option>
+                  <option>First AC (1A)</option>
+                  <option>AC Chair Car (CC)</option>
+                  <option>Executive Chair Car (EC)</option>
+                  <option>Second Sitting (2S)</option>
+                  <option>Vistadome</option>
+                  <option>Other</option>
+                </select></label>
+                <label><span>Gender <i>*</i></span><select value={ticket.gender || "Male"} onChange={e => updateTicket(index, "gender", e.target.value)}><option>Male</option><option>Female</option></select></label>
                 <label><span>Status <i>*</i></span><select value={ticket.status} onChange={e => updateTicket(index, "status", e.target.value)}><option>Confirmed</option><option>RAC</option></select></label>
                 {ticket.status === "RAC" ? (
                   <label><span>RAC Number <i>*</i></span><input value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)} placeholder="e.g. RAC 18" /></label>
                 ) : (
-                  <label><span>Seat / Berth <i>*</i></span><select value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)}>
-                    <option value="">Select seat / berth</option>
-                    <option>S5 / 42 / Lower</option>
-                    <option>S5 / 43 / Upper</option>
-                    <option>S5 / 44 / Middle</option>
-                    <option>S6 / 18 / Side Lower</option>
-                    <option>S6 / 19 / Side Upper</option>
-                    <option>Other</option>
+                  <label><span>Seat / Berth Type <i>*</i></span><select value={ticket.details} onChange={e => updateTicket(index, "details", e.target.value)}>
+                    <option value="">Select type</option>
+                    {ticket.ticketType === "Sleeper (SL)" || ticket.ticketType === "AC 3 Tier (3A)" || ticket.ticketType === "AC 3 Economy (3E)" || ticket.ticketType === "AC 2 Tier (2A)" ? <>
+                      <option>Lower</option><option>Middle</option><option>Upper</option><option>Side Lower</option><option>Side Upper</option>
+                    </> : ticket.ticketType === "First AC (1A)" ? <>
+                      <option>Lower</option><option>Upper</option>
+                    </> : ticket.ticketType === "AC Chair Car (CC)" || ticket.ticketType === "Executive Chair Car (EC)" ? <>
+                      <option>Window</option><option>Aisle</option>
+                    </> : ticket.ticketType === "General / Unreserved" || ticket.ticketType === "Second Sitting (2S)" ? <>
+                      <option>Window</option><option>Middle</option><option>Aisle</option><option>Other</option>
+                    </> : <>
+                      <option>Lower</option><option>Middle</option><option>Upper</option><option>Side Lower</option><option>Side Upper</option><option>Window</option><option>Aisle</option><option>Other</option>
+                    </>}
                   </select></label>
                 )}
               </div>
@@ -157,7 +175,7 @@ function CreateListingPage({ onBack }) {
           <div className="preview-meta"><div><Ticket size={15} /><span>Journey Date<b>05 Oct 2026 (Sun)</b></span></div><div><span className="clock-dot">◷</span><span>Departure Time<b>04:00 PM</b></span></div><div><span className="clock-dot">◷</span><span>Duration<b>~17h 50m</b></span></div></div>
           <div className="preview-divider" />
           <div className="preview-subtitle"><Ticket size={16} /> Tickets ({ticketCount})</div>
-          <div className="preview-tickets">{tickets.map((ticket, index) => <div key={index}><span>{index + 1}.</span><b className={ticket.status === "RAC" ? "rac-badge" : "confirmed-badge"}>{ticket.status}</b><strong>{ticket.details || "Details not entered"}</strong></div>)}</div>
+          <div className="preview-tickets">{tickets.map((ticket, index) => <div className="preview-ticket-item" key={index}><span>{index + 1}.</span><div><b className={ticket.status === "RAC" ? "rac-badge" : "confirmed-badge"}>{ticket.status}</b><strong>{ticket.ticketType || "Ticket type not selected"} · {ticket.details || "Seat type not selected"}</strong><small>{ticket.gender || "Male"}</small></div></div>)}</div>
           <div className="preview-divider" />
           <div className="preview-subtitle">🏷️ Price</div>
           <div className="preview-price">₹ {Number(price || 0).toLocaleString("en-IN")} <small>per ticket</small></div>

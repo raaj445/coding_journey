@@ -53,8 +53,56 @@ const citiesByState = {
 };
 
 
+function StationPicker({ label, value, onChange, stations, required = true }) {
+  const [open, setOpen] = useState(false);
+  const query = value.trim().toLowerCase();
+  const suggestions = query
+    ? stations.filter(s => `${s.name} ${s.code} ${s.state || ""}`.toLowerCase().includes(query)).slice(0, 8)
+    : stations.slice(0, 8);
+
+  return (
+    <label className="modern-field station-picker-field">
+      <span>{label} {required && <i>*</i>}</span>
+      <div className="station-picker">
+        <div className="modern-input">
+          <input
+            value={value}
+            onFocus={() => setOpen(true)}
+            onChange={e => { onChange(e.target.value); setOpen(true); }}
+            placeholder="Search station name or code"
+            autoComplete="off"
+          />
+          <MapPin size={16}/>
+        </div>
+        {open && (
+          <div className="station-suggestions">
+            {suggestions.length ? suggestions.map(station => (
+              <button type="button" key={station.code + station.name} onMouseDown={() => {
+                onChange(`${station.name} (${station.code})`);
+                setOpen(false);
+              }}>
+                <b>{station.name}</b>
+                <span>{station.code}{station.state ? ` • ${station.state}` : ""}</span>
+              </button>
+            )) : <div className="station-empty">No station found</div>}
+          </div>
+        )}
+      </div>
+    </label>
+  );
+}
+
 function CreateListingPage({ onBack }) {
+  const [stations, setStations] = useState([]);
+  const [fromStation, setFromStation] = useState("New Delhi (NDLS)");
+  const [toStation, setToStation] = useState("Howrah (HWH)");
   const [ticketCount, setTicketCount] = useState(3);
+  useEffect(() => {
+    fetch("https://raw.githubusercontent.com/prasenjit-27/Indian-Railway-Data/main/stations.json")
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("Station data unavailable")))
+      .then(data => setStations(Array.isArray(data) ? data : []))
+      .catch(() => setStations([]));
+  }, []);
   const [tickets, setTickets] = useState([
     { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "Lower" },
     { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "Upper" },
@@ -117,8 +165,8 @@ function CreateListingPage({ onBack }) {
           <section className="listing-modern-card">
             <div className="modern-section-head"><span>1</span><div><h2>Journey Details</h2><p>Enter your train journey information</p></div></div>
             <div className="journey-grid">
-              <label className="modern-field"><span>From Station <i>*</i></span><div className="modern-input"><input defaultValue="New Delhi (NDLS)" /><MapPin size={16}/></div></label>
-              <label className="modern-field"><span>To Station <i>*</i></span><div className="modern-input"><input defaultValue="Howrah (HWH)" /><MapPin size={16}/></div></label>
+              <StationPicker label="From Station" value={fromStation} onChange={setFromStation} stations={stations} />
+              <StationPicker label="To Station" value={toStation} onChange={setToStation} stations={stations} />
               <label className="modern-field"><span>Journey Date <i>*</i></span><div className="modern-input"><input type="date" defaultValue="2026-10-20" /><Ticket size={16}/></div></label>
               <label className="modern-field train-search-field"><span>Train <em>(Optional)</em></span><div className="modern-input"><Search size={16}/><input defaultValue="12301 - Rajdhani Express" /></div></label>
             </div>

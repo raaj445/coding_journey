@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 const eventCards = [
@@ -52,6 +52,111 @@ const citiesByState = {
   "Puducherry": ["Karaikal", "Mahe", "Puducherry", "Yanam"]
 };
 
+
+function Dashboard({ user, onLogout }) {
+  const [activeNav, setActiveNav] = useState("Home");
+  const [search, setSearch] = useState("");
+  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Amartya";
+  const firstName = name.split(" ")[0];
+  const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+  const navItems = [
+    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Find People", icon: Users },
+    { label: "Communities", icon: HeartHandshake }, { label: "Messages", icon: MessageCircle }, { label: "My Listings", icon: Ticket },
+    { label: "Bookmarks", icon: Bookmark }, { label: "Profile", icon: UserRound }, { label: "Settings", icon: Settings },
+  ];
+  const tickets = [
+    { type: "Concert", title: "Diljit Dosanjh - India Tour", place: "Mumbai, MH", date: "25 Nov 2026", price: "₹2,500", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=700&q=85" },
+    { type: "Cricket", title: "India vs Australia - 3rd ODI", place: "Kolkata, WB", date: "17 Nov 2026", price: "₹1,800", image: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=700&q=85" },
+    { type: "Movie", title: "Pushpa 2 - Movie Tickets", place: "Delhi, DL", date: "8 Dec 2026", price: "₹650", image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=85" },
+    { type: "Train", title: "Patna to Delhi", place: "Patna → Delhi", date: "12 Nov 2026", price: "₹1,200", image: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=700&q=85" },
+  ];
+  const people = [
+    { name: "Neha", city: "Delhi", about: "Looking for Roommate" }, { name: "Rohan", city: "Bengaluru", about: "Tech & Startups" },
+    { name: "Sneha", city: "Mumbai", about: "Concerts & Travel" }, { name: "Vikram", city: "Kolkata", about: "Cricket & Football" },
+    { name: "Ananya", city: "Pune", about: "Movies & Food" },
+  ];
+  const suggested = [
+    { name: "Rahul Sharma", meta: "IIT KGP · Interested in Concerts" }, { name: "Priya Singh", meta: "Kolkata · Looking for Roommate" }, { name: "Arjun Mehta", meta: "Mumbai · Cricket Fan" },
+  ];
+  const communities = [
+    { name: "IIT Students", count: "2.4k members", icon: "🎓" }, { name: "Cricket Fans", count: "8.2k members", icon: "🏏" },
+    { name: "Movie Buffs", count: "5.1k members", icon: "🎬" }, { name: "Concert Goers", count: "3.6k members", icon: "🎵" },
+  ];
+
+  return (
+    <main className="dashboard-shell">
+      <header className="dashboard-topbar">
+        <div className="dashboard-brand"><span className="dashboard-logo"><Users size={20} fill="currentColor" /></span><span>Connect<span>Hub</span></span></div>
+        <div className="dashboard-search top-search"><Search size={18} /><input placeholder="Search tickets, people, events, locations..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+        <div className="top-actions">
+          <button className="post-button"><Plus size={17} /> Post</button>
+          <button className="icon-button" aria-label="Messages"><MessageCircle size={20} /></button>
+          <button className="icon-button notification-button" aria-label="Notifications"><Bell size={20} /><i /></button>
+          <button className="profile-mini"><span className="avatar">{avatar ? <img src={avatar} alt="" /> : <UserRound size={18} />}</span><b>{firstName}</b><ChevronDown size={16} /></button>
+          <button className="mobile-menu" aria-label="Menu"><Menu size={21} /></button>
+        </div>
+      </header>
+      <div className="dashboard-body">
+        <aside className="dashboard-sidebar">
+          <nav>
+            {navItems.map(({ label, icon: Icon }) => (
+              <button key={label} className={activeNav === label ? "side-nav active" : "side-nav"} onClick={() => setActiveNav(label)}><Icon size={18} /><span>{label}</span></button>
+            ))}
+          </nav>
+          <button className="side-nav logout-nav" onClick={onLogout}><LogOut size={18} /><span>Log out</span></button>
+        </aside>
+        <section className="dashboard-main">
+          <div className="welcome-panel">
+            <div><p className="welcome-kicker">YOUR CONNECTHUB SPACE</p><h1>Good evening, {firstName} <span>👋</span></h1><p>What are you looking for today?</p></div>
+            <div className="dashboard-search hero-search"><Search size={19} /><input placeholder="Search tickets, people, events, locations..." value={search} onChange={e => setSearch(e.target.value)} /><button aria-label="Search"><Search size={18} /></button></div>
+            <div className="search-tags">{["Concerts","Cricket","Movies","Train Tickets","Roommates","IIT Students","Nearby"].map(tag => <button key={tag} onClick={() => setSearch(tag)}>{tag}</button>)}</div>
+          </div>
+
+          <section className="dashboard-section">
+            <div className="section-heading"><h2>Quick Actions</h2></div>
+            <div className="quick-grid">
+              <button className="quick-card lavender"><span><Ticket size={23} /></span><div><b>Find Tickets</b><small>Concerts, Movies, Trains</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card pink"><span><Users size={23} /></span><div><b>Find People</b><small>Roommates, Friends</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card green"><span><Users size={23} /></span><div><b>Explore Communities</b><small>Join groups & interests</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card yellow"><span><Plus size={23} /></span><div><b>Create a Listing</b><small>Sell or find what you need</small></div><ArrowRight size={18} /></button>
+            </div>
+          </section>
+
+          <section className="dashboard-section">
+            <div className="section-heading"><h2>Trending Tickets Near You</h2><button>View all <ArrowUpRight size={16} /></button></div>
+            <div className="ticket-grid">{tickets.map(ticket => (
+              <article className="ticket-card" key={ticket.title}>
+                <div className="ticket-image"><img src={ticket.image} alt="" /><button className="heart-button" aria-label="Bookmark ticket"><Heart size={17} /></button><span>{ticket.type}</span></div>
+                <div className="ticket-content"><h3>{ticket.title}</h3><p><MapPin size={13} /> {ticket.place}</p><p><Ticket size={13} /> {ticket.date}</p><div className="ticket-bottom"><b>{ticket.price}</b><button>View Details</button></div></div>
+              </article>
+            ))}</div>
+          </section>
+
+          <section className="dashboard-section">
+            <div className="section-heading"><h2>People Near You</h2><button>View all <ArrowUpRight size={16} /></button></div>
+            <div className="people-grid">{people.map((person, index) => (
+              <article className="person-card" key={person.name}><div className={`person-avatar avatar-${index + 1}`}><UserRound size={20} /></div><div><b>{person.name}</b><small>{person.city}</small><small>{person.about}</small></div><button>Connect</button></article>
+            ))}</div>
+          </section>
+        </section>
+
+        <aside className="dashboard-right">
+          <section className="profile-card">
+            <div className="profile-card-head"><span className="large-avatar">{avatar ? <img src={avatar} alt="" /> : <UserRound size={25} />}</span><div><b>{name}</b><small>@{firstName.toLowerCase()}</small></div><button>Edit Profile</button></div>
+            <div className="profile-stats"><div><b>12</b><small>Listings</small></div><div><b>8</b><small>Bookmarks</small></div><div><b>4</b><small>Communities</small></div></div>
+          </section>
+          <section className="side-card"><div className="section-heading"><h2>Suggested People</h2><button>View all</button></div>{suggested.map((person, index) => (
+            <div className="suggested-row" key={person.name}><span className={`person-avatar small avatar-${index + 2}`}><UserRound size={16} /></span><div><b>{person.name}</b><small>{person.meta}</small></div><button>Connect</button></div>
+          ))}</section>
+          <section className="side-card"><div className="section-heading"><h2>Popular Communities</h2><button>View all</button></div>{communities.map((community, index) => (
+            <div className="community-row" key={community.name}><span className={`community-icon community-${index + 1}`}>{community.icon}</span><div><b>{community.name}</b><small>{community.count}</small></div><button>Join</button></div>
+          ))}</section>
+        </aside>
+      </div>
+    </main>
+  );
+}
+
 export default function App() {
   const [mode, setMode] = useState("login");
   const [isResetMode, setIsResetMode] = useState(() => new URLSearchParams(window.location.search).get("reset") === "1");
@@ -69,19 +174,28 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("error");
   const [legalPage, setLegalPage] = useState("");
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     if (!supabase) return undefined;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted && !isResetMode) setUser(data.session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsResetMode(true);
+        setUser(null);
         setMessage("");
         setPassword("");
         setConfirmPassword("");
+        return;
       }
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && !isResetMode) setUser(session?.user ?? null);
+      if (event === "SIGNED_OUT") setUser(null);
     });
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, [isResetMode]);
 
   function switchMode(nextMode) {
     setMode(nextMode);
@@ -138,6 +252,8 @@ export default function App() {
         if (error) throw error;
         setMessageType("success");
         setMessage("You're signed in successfully. Welcome to ConnectHub!");
+        const { data: sessionData } = await supabase.auth.getSession();
+        setUser(sessionData.session?.user ?? null);
       }
     } catch (error) {
       setMessageType("error");
@@ -198,6 +314,13 @@ export default function App() {
       setMessage(error.message || "Google sign-in failed. Please try again.");
       setLoading(false);
     }
+  }
+
+  if (user && !isResetMode) {
+    return <Dashboard user={user} onLogout={async () => {
+      if (supabase) await supabase.auth.signOut();
+      setUser(null);
+    }} />;
   }
 
   return (

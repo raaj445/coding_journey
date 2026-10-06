@@ -392,3 +392,22 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .marketplace-detail .detail-description{font-size:14px!important;line-height:1.7}
 .marketplace-detail .detail-actions button{font-size:13px;padding:13px 10px}
 .marketplace-detail .marketplace-kind{font-size:10px}
+
+
+/* Page layouts that keep the shared navigation visible */
+.my-listings-shell{display:grid;grid-template-columns:210px minmax(0,1fr);padding:0;align-items:stretch}
+.my-listings-shell>.universal-sidebar{min-height:100vh;position:sticky;top:0;height:100vh}
+.my-listings-page-content{min-width:0;padding:42px 6vw 70px}
+.coming-soon-with-sidebar{display:grid;grid-template-columns:210px minmax(0,1fr);padding:0;place-items:stretch}
+.coming-soon-with-sidebar>.universal-sidebar{min-height:100vh}
+.coming-soon-stage{min-height:100vh;display:grid;place-items:center;padding:42px;box-sizing:border-box;position:relative}
+.coming-soon-stage .coming-soon-back{position:absolute}
+@media(max-width:760px){
+  .my-listings-shell{display:block}
+  .my-listings-shell>.universal-sidebar{position:static;height:auto;min-height:auto}
+  .my-listings-page-content{padding:28px 16px 50px}
+  .coming-soon-with-sidebar{display:block}
+  .coming-soon-with-sidebar>.universal-sidebar{min-height:auto}
+  .coming-soon-stage{min-height:calc(100vh - 58px);padding:20px}
+  .coming-soon-stage .coming-soon-back{left:16px;top:16px}
+}

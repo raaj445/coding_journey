@@ -247,8 +247,8 @@ function CreateListingPage({ onBack, onMovie, onConcert }) {
         <aside className="listing-left-nav">
           <button className="listing-nav-item muted" onClick={onBack}><Home size={18}/><span>Roommate / Flatmate<small>Coming Soon</small></span></button>
           <button className="listing-nav-item active"><Ticket size={18}/><span>Train Ticket</span></button>
-          <button className="listing-nav-item" onClick={onMovie}><Ticket size={18}/><span>Movie Ticket</span></button>
-          <button className="listing-nav-item" onClick={onConcert}><Music2 size={18}/><span>Concert Ticket</span></button>
+          <button type="button" className="listing-nav-item" onClick={() => onMovie?.()}><Ticket size={18}/><span>Movie Ticket</span></button>
+          <button type="button" className="listing-nav-item" onClick={() => onConcert?.()}><Music2 size={18}/><span>Concert Ticket</span></button>
         </aside>
 
         <section className="listing-main-column">

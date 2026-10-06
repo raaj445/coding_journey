@@ -326,7 +326,7 @@ function CreateListingPage({ onBack, onMovie, onConcert, onNavigate, onLogout })
   );
 }
 
-function MyListingsPage({ user, onBack }) {
+function MyListingsPage({ user, onBack, onNavigate, onLogout }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -358,6 +358,8 @@ function MyListingsPage({ user, onBack }) {
 
   return (
     <main className="my-listings-shell">
+      <UniversalSidebar activeNav="My Listings" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
+      <section className="my-listings-page-content">
       <header className="my-listings-header">
         <div>
           <button className="my-listings-back" onClick={onBack}>← Back to Dashboard</button>
@@ -396,6 +398,7 @@ function MyListingsPage({ user, onBack }) {
            </article>
          ))}
        </div>}
+    </section>
     </main>
   );
 }
@@ -467,7 +470,7 @@ function Dashboard({ user, onLogout }) {
   );
   if (activeNav === "Find Tickets") return <FindTicketsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
-  if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} />;
+  if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   const navItems = [
     { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Find People", icon: Users },
     { label: "Communities", icon: HeartHandshake }, { label: "Messages", icon: MessageCircle }, { label: "My Listings", icon: Ticket },

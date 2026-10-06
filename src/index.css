@@ -449,3 +449,54 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   .listing-edit-overlay{padding:12px}
   .listing-edit-modal{padding:19px}
 }
+
+
+/* Favorites */
+.marketplace-favorite-top{position:relative}
+.marketplace-favorite-top i{position:absolute;right:1px;top:0;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:#6336ec;color:#fff;font:800 8px/14px "Manrope",sans-serif;font-style:normal;text-align:center}
+.marketplace-heart{cursor:pointer}
+.marketplace-heart.active{color:#ef4672}
+.marketplace-heart:disabled{opacity:.55;cursor:wait}
+.detail-favorite{position:absolute;right:52px;top:13px;z-index:2;border:0;background:#fff;width:31px;height:31px;border-radius:50%;box-shadow:0 3px 10px #00000016;display:grid;place-items:center;color:#7f8093;cursor:pointer}
+.detail-favorite.active{color:#ef4672}
+.detail-favorite:disabled{opacity:.55;cursor:wait}
+
+.favorites-shell{min-height:100vh;background:#f8f7ff;color:#20213a}
+.favorites-body{display:grid;grid-template-columns:210px minmax(0,1fr);min-height:calc(100vh - 64px)}
+.favorites-content{padding:34px 5vw 60px;min-width:0}
+.favorites-back{border:0;background:none;color:#6338e8;font:700 12px "Manrope";padding:0;cursor:pointer;margin-bottom:22px}
+.favorites-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}
+.favorites-heading span{font-size:9px;letter-spacing:1.4px;font-weight:900;color:#6336ec}
+.favorites-heading h1{margin:5px 0 4px;font:800 32px "Manrope";letter-spacing:-.7px}
+.favorites-heading p{margin:0;color:#77758a;font-size:13px}
+.favorites-heading>strong{padding:9px 13px;border-radius:999px;background:#eee8ff;color:#6336ec;font:800 11px "Manrope"}
+.favorites-list{display:flex;flex-direction:column;gap:12px;max-width:1050px}
+.favorite-card{display:grid;grid-template-columns:170px minmax(0,1fr) 145px;gap:17px;align-items:center;background:#fff;border:1px solid #e6e3ef;border-radius:15px;padding:10px;box-shadow:0 5px 16px #2a24500a}
+.favorite-card:hover{border-color:#a18bf2}
+.favorite-card.unavailable{opacity:.72}
+.favorite-card-art{height:112px;border-radius:10px;overflow:hidden;background:#eeeaff;color:#6336ec;display:grid;place-items:center}
+.favorite-card-art img{width:100%;height:100%;object-fit:cover}
+.favorite-train-artwork{width:100%;height:100%;display:block}
+.favorite-card-main>span{font-size:8px;letter-spacing:1px;font-weight:900;color:#6336ec}
+.favorite-card-main h2{margin:5px 0 7px;font:800 16px "Manrope";color:#24253d}
+.favorite-card-main p{display:flex;align-items:center;gap:6px;margin:6px 0;color:#77798c;font-size:11px}
+.favorite-card-side{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.favorite-card-side strong{font:800 18px "Manrope";color:#20213a}
+.favorite-card-side small{font-size:9px;color:#9291a0}
+.favorite-card-side em{font-style:normal;font-size:8px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e9f9ef;color:#168548}
+.favorite-card-side em.not-available{background:#fff0f2;color:#b33c51}
+.favorite-remove{margin-top:7px;border:1px solid #f0d0d7;background:#fff7f8;color:#b33c51;border-radius:8px;padding:7px 9px;font:800 9px "Manrope";cursor:pointer;display:flex;align-items:center;gap:5px}
+.favorite-remove:hover{background:#ffecef}
+.favorites-empty{min-height:300px;max-width:1050px;border:1px dashed #d9d5e8;border-radius:16px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#77758a;font-size:11px;text-align:center;padding:20px}
+.favorites-empty b{font-size:16px;color:#30314b}
+.favorites-empty button{margin-top:8px;border:0;border-radius:9px;background:#6336ec;color:#fff;padding:10px 15px;font:800 10px "Manrope";cursor:pointer}
+.favorites-empty.error{color:#b33c51}
+.marketplace-icon-btn.active{color:#ef4672}
+@media(max-width:760px){
+  .favorites-body{display:block}
+  .favorites-content{padding:25px 16px 45px}
+  .favorites-heading{align-items:flex-start;flex-direction:column}
+  .favorite-card{grid-template-columns:92px minmax(0,1fr);gap:11px}
+  .favorite-card-art{height:92px}
+  .favorite-card-side{grid-column:2;align-items:flex-start;text-align:left}
+}

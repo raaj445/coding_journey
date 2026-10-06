@@ -21,6 +21,8 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
   const [error,setError]=useState("");
   const [stationLocations,setStationLocations]=useState({});
   const [stateCities,setStateCities]=useState({});
+  const [favorites,setFavorites]=useState([]);
+  const [favoriteBusy,setFavoriteBusy]=useState("");
 
   useEffect(()=>{
     let cancelled=false;
@@ -43,6 +45,17 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
       setLoading(false);
     }
     load(); return ()=>{cancelled=true};
+  },[user?.id]);
+
+  useEffect(()=>{
+    let cancelled=false;
+    async function loadFavorites(){
+      if(!user?.id){setFavorites([]);return;}
+      const {data,error}=await supabase.from("listing_favorites").select("listing_kind,listing_id").eq("user_id",user.id);
+      if(!cancelled) setFavorites(error ? [] : (data||[]).map(row=>row.listing_kind+":"+row.listing_id));
+    }
+    loadFavorites();
+    return ()=>{cancelled=true};
   },[user?.id]);
 
   useEffect(()=>{
@@ -143,12 +156,34 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
   useEffect(()=>{if(selected && !filtered.some(x=>x.id===selected.id))setSelected(null)},[filtered,selected]);
 
   const choose=x=>setSelected(x);
+  const favoriteKey=item=>item.kind+":"+item.id;
+  const isFavorite=item=>favorites.includes(favoriteKey(item));
+  async function toggleFavorite(item){
+    if(!user?.id || favoriteBusy) return;
+    const key=favoriteKey(item);
+    setFavoriteBusy(key);
+    try{
+      if(isFavorite(item)){
+        const {error}=await supabase.from("listing_favorites").delete().eq("user_id",user.id).eq("listing_kind",item.kind).eq("listing_id",item.id);
+        if(error) throw error;
+        setFavorites(current=>current.filter(value=>value!==key));
+      }else{
+        const {error}=await supabase.from("listing_favorites").insert({user_id:user.id,listing_kind:item.kind,listing_id:item.id});
+        if(error) throw error;
+        setFavorites(current=>[...current,key]);
+      }
+    }catch(err){
+      alert(err?.message || "Could not update favorites.");
+    }finally{
+      setFavoriteBusy("");
+    }
+  }
   return (
     <main className="marketplace-shell">
       <header className="marketplace-topbar">
         <button className="marketplace-brand" onClick={onBack}><span><Music2 size={18}/></span>Connect<span>Hub</span></button>
         <div className="marketplace-search"><Search size={18}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search concerts, artists, venues, cities..."/></div>
-        <button className="marketplace-icon-btn"><Bell size={19}/></button><span className="marketplace-avatar"><UserRound size={18}/></span>
+        <button className="marketplace-icon-btn marketplace-favorite-top" onClick={()=>onNavigate?.("Favorites")} aria-label="Favorites"><Heart size={20} fill={favorites.length ? "currentColor" : "none"}/>{favorites.length>0&&<i>{favorites.length>99?"99+":favorites.length}</i>}</button><button className="marketplace-icon-btn"><Bell size={19}/></button><span className="marketplace-avatar"><UserRound size={18}/></span>
       </header>
 
       <div className="marketplace-body">
@@ -190,7 +225,7 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
                     <p><CalendarDays size={14}/>{dateText(item.eventAt)} · {new Date(item.eventAt).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})}</p>
                   </div>
                   <div className="marketplace-card-price"><strong>{money(item.price)}</strong><small>per ticket</small><span>{item.ticket_count} ticket{item.ticket_count===1?"":"s"} available</span><button>View Details <ChevronDown size={14}/></button></div>
-                  <button className="marketplace-heart" onClick={e=>e.stopPropagation()}><Heart size={19}/></button>
+                  <button className={isFavorite(item) ? "marketplace-heart active" : "marketplace-heart"} onClick={e=>{e.stopPropagation();toggleFavorite(item)}} aria-label={isFavorite(item)?"Remove from favorites":"Add to favorites"} disabled={favoriteBusy===favoriteKey(item)}><Heart size={19} fill={isFavorite(item) ? "currentColor" : "none"}/></button>
                 </article>
               ))}
             </div>
@@ -198,7 +233,7 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
         </section>
 
         {selected && <aside className="marketplace-detail">
-          <button className="detail-close" onClick={()=>setSelected(null)}><X size={18}/></button>
+          <button className="detail-close" onClick={()=>setSelected(null)}><X size={18}/></button><button className={isFavorite(selected) ? "detail-favorite active" : "detail-favorite"} onClick={()=>toggleFavorite(selected)} aria-label={isFavorite(selected)?"Remove from favorites":"Add to favorites"} disabled={favoriteBusy===favoriteKey(selected)}><Heart size={18} fill={isFavorite(selected) ? "currentColor" : "none"}/></button>
           <div className="detail-hero">{selected.kind==="MOVIE"&&selected.poster_url?<img src={selected.poster_url} alt=""/>:<div className={"detail-art "+selected.kind.toLowerCase()}>{selected.kind==="CONCERT"?<Music2 size={52}/>:selected.kind==="TRAIN"?<TrainArtwork className="detail-train-icon"/>:<Ticket size={52}/>}</div>}</div>
           <div className="detail-body">
             <span className="marketplace-kind">{selected.kind}</span>

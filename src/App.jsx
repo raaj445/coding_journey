@@ -378,7 +378,7 @@ function MyListingsPage({ user, onBack }) {
          {items.map(item => (
            <article className="my-listing-full-card" key={item.kind + "-" + item.id}>
              <div className="my-listing-full-image">
-               {item.kind === "TRAIN" ? <img src={TRAIN_ICON_SRC} alt="Train" /> :
+               {item.kind === "TRAIN" ? <TrainArtwork className="my-listing-train-artwork" /> :
                 item.kind === "MOVIE" && item.poster_url ? <img src={item.poster_url} alt="" /> :
                 item.kind === "MOVIE" ? <Ticket size={34}/> : <Music2 size={34}/>}
              </div>

@@ -329,6 +329,31 @@ function CreateListingPage({ onBack }) {
 function Dashboard({ user, onLogout }) {
   const [activeNav, setActiveNav] = useState("Home");
   const [search, setSearch] = useState("");
+  const [myListings, setMyListings] = useState([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadMyListings() {
+      if (!supabase || !user?.id) {
+        if (mounted) setListingsLoading(false);
+        return;
+      }
+      setListingsLoading(true);
+      const { data, error } = await supabase
+        .from("listings")
+        .select("id, train_number, train_name, from_name, to_name, journey_date, departure_at, status, ticket_count, price_per_ticket, ready_to_bargain")
+        .eq("seller_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (mounted) {
+        setMyListings(error ? [] : (data || []));
+        setListingsLoading(false);
+      }
+    }
+    loadMyListings();
+    return () => { mounted = false; };
+  }, [user?.id]);
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Amartya";
   const firstName = name.split(" ")[0];
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
@@ -397,6 +422,32 @@ function Dashboard({ user, onLogout }) {
           </section>
 
           <section className="dashboard-section">
+            <div className="section-heading"><h2>Your Listings</h2><button onClick={() => setActiveNav("My Listings")}>View all <ArrowUpRight size={16} /></button></div>
+            {listingsLoading ? (
+              <div className="dashboard-empty-card">Loading your listings...</div>
+            ) : myListings.length ? (
+              <div className="my-listing-grid">
+                {myListings.slice(0, 4).map(listing => (
+                  <article className="my-listing-card" key={listing.id}>
+                    <div className="my-listing-icon"><Ticket size={20} /></div>
+                    <div className="my-listing-info">
+                      <b>{listing.from_name} → {listing.to_name}</b>
+                      <span>{listing.train_number} · {listing.train_name}</span>
+                      <small>{listing.journey_date} · {listing.ticket_count} ticket{listing.ticket_count === 1 ? "" : "s"}</small>
+                    </div>
+                    <div className="my-listing-side">
+                      <strong>{listing.price_per_ticket ? "₹" + Number(listing.price_per_ticket).toLocaleString("en-IN") : "Price varies"}</strong>
+                      <em className={listing.status === "ACTIVE" ? "listing-active" : "listing-status"}>{listing.status}</em>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="dashboard-empty-card">You haven't posted any listings yet.</div>
+            )}
+          </section>
+
+          <section className="dashboard-section">
             <div className="section-heading"><h2>Trending Tickets Near You</h2><button>View all <ArrowUpRight size={16} /></button></div>
             <div className="ticket-grid">{tickets.map(ticket => (
               <article className="ticket-card" key={ticket.title}>
@@ -417,7 +468,7 @@ function Dashboard({ user, onLogout }) {
         <aside className="dashboard-right">
           <section className="profile-card">
             <div className="profile-card-head"><span className="large-avatar">{avatar ? <img src={avatar} alt="" /> : <UserRound size={25} />}</span><div><b>{name}</b><small>@{firstName.toLowerCase()}</small></div><button>Edit Profile</button></div>
-            <div className="profile-stats"><div><b>12</b><small>Listings</small></div><div><b>8</b><small>Bookmarks</small></div><div><b>4</b><small>Communities</small></div></div>
+            <div className="profile-stats"><div><b>{myListings.length}</b><small>Listings</small></div><div><b>8</b><small>Bookmarks</small></div><div><b>4</b><small>Communities</small></div></div>
           </section>
           <section className="side-card"><div className="section-heading"><h2>Suggested People</h2><button>View all</button></div>{suggested.map((person, index) => (
             <div className="suggested-row" key={person.name}><span className={`person-avatar small avatar-${index + 2}`}><UserRound size={16} /></span><div><b>{person.name}</b><small>{person.meta}</small></div><button>Connect</button></div>

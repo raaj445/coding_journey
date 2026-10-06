@@ -457,14 +457,17 @@ function Dashboard({ user, onLogout }) {
   if (activeNav === "Movie Ticket") return <MovieTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
   if (activeNav === "Concert Ticket") return <ConcertTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onMovie={() => setActiveNav("Movie Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
   if (activeNav === "Find People") return (
-    <main className="coming-soon-shell">
-      <button className="coming-soon-back" onClick={() => setActiveNav("Home")}><ArrowRight size={16} style={{transform:"rotate(180deg)"}} /> Back to Dashboard</button>
-      <section className="coming-soon-card">
-        <div className="coming-soon-icon"><Users size={30}/></div>
-        <span>CONNECTHUB</span>
-        <h1>Roommate & People Finder</h1>
-        <p>Find roommates, friends and people with similar interests. This section is coming next.</p>
-        <button onClick={() => setActiveNav("Home")}>Back to Home</button>
+    <main className="coming-soon-shell coming-soon-with-sidebar">
+      <UniversalSidebar activeNav="Find People" onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />
+      <section className="coming-soon-stage">
+        <button className="coming-soon-back" onClick={() => setActiveNav("Home")}><ArrowRight size={16} style={{transform:"rotate(180deg)"}} /> Back to Dashboard</button>
+        <section className="coming-soon-card">
+          <div className="coming-soon-icon"><Users size={30}/></div>
+          <span>CONNECTHUB</span>
+          <h1>Roommate & People Finder</h1>
+          <p>Find roommates, friends and people with similar interests. This section is coming next.</p>
+          <button onClick={() => setActiveNav("Home")}>Back to Home</button>
+        </section>
       </section>
     </main>
   );

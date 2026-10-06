@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Bell, CalendarDays, Clock3, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import UniversalSidebar from "./UniversalSidebar";
 
 const TICKET_TYPES = ["General Admission", "Standing", "Seated", "VIP", "Premium", "Early Bird", "Other"];
 const SEAT_TYPES = ["General", "Standing", "Floor", "Lower", "Upper", "Balcony", "Box", "Other"];
 
-export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, states = [], citiesByState = {} }) {
+export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, states = [], citiesByState = {}, onNavigate, onLogout }) {
   const [eventName, setEventName] = useState("");
   const [artistName, setArtistName] = useState("");
   const [stateName, setStateName] = useState("");
@@ -95,12 +96,7 @@ export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, sta
       </header>
 
       <div className="listing-layout">
-        <aside className="listing-left-nav">
-          <button className="listing-nav-item muted" onClick={onBack}><Home size={18}/><span>Roommate / Flatmate<small>Coming Soon</small></span></button>
-          <button type="button" className="listing-nav-item" onClick={onTrain}><Ticket size={18}/><span>Train Ticket</span></button>
-          <button type="button" className="listing-nav-item" onClick={onMovie}><Ticket size={18}/><span>Movie Ticket</span></button>
-          <button type="button" className="listing-nav-item active"><Music2 size={18}/><span>Concert Ticket</span></button>
-        </aside>
+        <UniversalSidebar activeNav="Create Listing" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
 
         <section className="listing-main-column">
           <div className="listing-page-title">

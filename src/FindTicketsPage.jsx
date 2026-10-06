@@ -19,6 +19,8 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
   const [selected,setSelected]=useState(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
+  const [stationLocations,setStationLocations]=useState({});
+  const [stateCities,setStateCities]=useState({});
 
   useEffect(()=>{
     let cancelled=false;
@@ -43,8 +45,96 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
     load(); return ()=>{cancelled=true};
   },[user?.id]);
 
-  const states=[...new Set(listings.map(x=>x.state).filter(Boolean))].sort();
-  const cities=[...new Set(listings.map(x=>x.city).filter(Boolean))].sort();
+  useEffect(()=>{
+    let cancelled=false;
+    async function loadLocations(){
+      try{
+        const [stationsRes, locationsRes] = await Promise.all([
+          fetch("/rail/stations.json"),
+          fetch("https://raw.githubusercontent.com/bhanuc/indian-list/master/state-city.json")
+        ]);
+        const stations = stationsRes.ok ? await stationsRes.json() : [];
+        const locations = locationsRes.ok ? await locationsRes.json() : {};
+        if(cancelled)return;
+        const stationMap={};
+        (stations||[]).forEach(s=>{
+          if(s?.code) stationMap[s.code]={city:s.state || s.name || ""};
+        });
+        setStationLocations(stationMap);
+        setStateCities(locations && typeof locations==="object" ? locations : {});
+      }catch{
+        if(!cancelled){
+          setStationLocations({});
+          setStateCities({});
+        }
+      }
+    }
+    loadLocations();
+    return ()=>{cancelled=true};
+  },[]);
+
+  const cityStateMap=useMemo(()=>{
+    const map={};
+    Object.entries(stateCities).forEach(([st,cities])=>{
+      (cities||[]).forEach(city=>{
+        const clean=String(city).replace(/\\*$/,"").trim().toLowerCase();
+        if(clean && !map[clean]) map[clean]=st;
+      });
+    });
+    return map;
+  },[stateCities]);
+
+  const enrichLocation=(code, fallbackCity="")=>{
+    const city=stationLocations[code]?.city || fallbackCity || "";
+    const state=cityStateMap[String(city).trim().toLowerCase()] || "";
+    return {city,state};
+  };
+
+  const enrichedListings=useMemo(()=>listings.map(x=>{
+    if(x.kind!=="TRAIN") return {
+      ...x,
+      locationStates:[x.state].filter(Boolean),
+      locationCities:[x.city].filter(Boolean)
+    };
+    const from=enrichLocation(x.from_code,x.from_name);
+    const to=enrichLocation(x.to_code,x.to_name);
+    return {
+      ...x,
+      locationStates:[from.state,to.state].filter(Boolean),
+      locationCities:[from.city,to.city].filter(Boolean)
+    };
+  }),[listings,stationLocations,cityStateMap]);
+
+  const states=[...new Set([
+    ...Object.keys(stateCities),
+    ...enrichedListings.flatMap(x=>x.locationStates||[])
+  ])].sort();
+
+  const cities=[...new Set(
+    state
+      ? [
+          ...(stateCities[state]||[]),
+          ...enrichedListings.filter(x=>(x.locationStates||[]).includes(state)).flatMap(x=>x.locationCities||[])
+        ]
+      : [
+          ...enrichedListings.flatMap(x=>x.locationCities||[]),
+          ...Object.values(stateCities).flat()
+        ]
+  )].map(x=>String(x).replace(/\\*$/,"").trim()).filter(Boolean).sort();
+
+  const filtered=useMemo(()=>{
+    let data=enrichedListings.filter(x=>{
+      if(category!=="ALL"&&x.kind!==category)return false;
+      const hay=[x.title,x.place,x.artist_name,x.train_number,x.city,x.state,x.venue,x.cinema_hall].filter(Boolean).join(" ").toLowerCase();
+      if(search.trim()&&!hay.includes(search.trim().toLowerCase()))return false;
+      if(state&&!(x.locationStates||[]).includes(state))return false;
+      if(city&&!(x.locationCities||[]).map(v=>String(v).replace(/\\*$/,"").trim()).includes(city))return false;
+      if(date&&x.eventAt?.slice(0,10)!==date)return false;
+      if(maxPrice&&Number(x.price||0)>Number(maxPrice))return false;
+      return true;
+    });
+    return data.sort((a,b)=>sort==="PRICE" ? Number(a.price||0)-Number(b.price||0) : new Date(a.eventAt)-new Date(b.eventAt));
+  },[enrichedListings,category,search,state,city,date,maxPrice,sort]);
 
   const filtered=useMemo(()=>{
     let data=listings.filter(x=>{

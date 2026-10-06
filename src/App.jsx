@@ -97,6 +97,18 @@ function CreateListingPage({ onBack }) {
   const [fromStation, setFromStation] = useState("New Delhi (NDLS)");
   const [toStation, setToStation] = useState("Howrah (HWH)");
   const [ticketCount, setTicketCount] = useState(3);
+  const [trains, setTrains] = useState([]);
+  const [trainQuery, setTrainQuery] = useState("");
+  const [trainOpen, setTrainOpen] = useState(false);
+  const [journeyDate, setJourneyDate] = useState("2026-10-20");
+  const [railValidation, setRailValidation] = useState(null);
+  const [railChecking, setRailChecking] = useState(false);
+  useEffect(() => {
+    fetch("/rail/train-index.json")
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("Train index unavailable")))
+      .then(data => setTrains(Array.isArray(data?.trains) ? data.trains : []))
+      .catch(() => setTrains([]));
+  }, []);
   useEffect(() => {
     fetch("https://raw.githubusercontent.com/prasenjit-27/Indian-Railway-Data/main/stations.json")
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Station data unavailable")))
@@ -106,7 +118,7 @@ function CreateListingPage({ onBack }) {
   const [tickets, setTickets] = useState([
     { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "Lower" },
     { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "Upper" },
-    { ticketType: "AC 3 Tier (3A)", gender: "Female", status: "RAC", details: "RAC 18" },
+    { ticketType: "AC 3 Tier (3A)", gender: "Female", status: "RAC", details: "18" },
   ]);
   const [samePrice, setSamePrice] = useState(true);
   const [price, setPrice] = useState("1500");
@@ -126,6 +138,37 @@ function CreateListingPage({ onBack }) {
 
   const confirmed = tickets.filter(ticket => ticket.status === "Confirmed").length;
   const rac = tickets.filter(ticket => ticket.status === "RAC").length;
+  const selectedFromCode = (fromStation.match(/\(([A-Z0-9]+)\)$/) || [,""])[1];
+  const selectedToCode = (toStation.match(/\(([A-Z0-9]+)\)$/) || [,""])[1];
+  const trainSuggestions = trainQuery.trim()
+    ? trains.filter(train => `${train.number} ${train.name}`.toLowerCase().includes(trainQuery.trim().toLowerCase())).slice(0, 8)
+    : trains.slice(0, 8);
+
+  async function verifyRailJourney() {
+    const trainNumber = trainQuery.trim().match(/^\d{1,5}/)?.[0]?.padStart(5, "0") || "";
+    if (!trainNumber || !selectedFromCode || !selectedToCode || !journeyDate) {
+      setRailValidation({ valid: false, message: "Select From, To, Journey Date and a valid Train Number." });
+      return;
+    }
+    setRailChecking(true);
+    setRailValidation(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("validate-rail-journey", {
+        body: { trainNumber, fromCode: selectedFromCode, toCode: selectedToCode, journeyDate }
+      });
+      if (error) throw error;
+      setRailValidation(data);
+    } catch {
+      setRailValidation({ valid: false, message: "Railway verification is temporarily unavailable. Please try again." });
+    } finally {
+      setRailChecking(false);
+    }
+  }
+
+  const selectedTrainNumber = trainQuery.trim().match(/^\d{1,5}/)?.[0]?.padStart(5, "0") || "";
+  const selectedTrain = trains.find(train => train.number === selectedTrainNumber);
+  const displayDeparture = railValidation?.valid ? railValidation.departureTime : "Select train";
+  const displayTrainName = railValidation?.valid ? railValidation.train.name : (selectedTrain?.name || "Verify train");
 
   const ticketTypeOptions = ["General / Unreserved","Sleeper (SL)","AC 3 Tier (3A)","AC 3 Economy (3E)","AC 2 Tier (2A)","First AC (1A)","AC Chair Car (CC)","Executive Chair Car (EC)","Second Sitting (2S)","Vistadome","Other"];
 
@@ -167,10 +210,13 @@ function CreateListingPage({ onBack }) {
             <div className="journey-grid">
               <StationPicker label="From Station" value={fromStation} onChange={setFromStation} stations={stations} />
               <StationPicker label="To Station" value={toStation} onChange={setToStation} stations={stations} />
-              <label className="modern-field"><span>Journey Date <i>*</i></span><div className="modern-input"><input type="date" defaultValue="2026-10-20" /><Ticket size={16}/></div></label>
-              <label className="modern-field train-search-field"><span>Train <em>(Optional)</em></span><div className="modern-input"><Search size={16}/><input defaultValue="12301 - Rajdhani Express" /></div></label>
+              <label className="modern-field"><span>Journey Date <i>*</i></span><div className="modern-input"><input type="date" value={journeyDate} onChange={e => { setJourneyDate(e.target.value); setRailValidation(null); }} /><Ticket size={16}/></div></label>
+              <label className="modern-field train-search-field train-picker-field"><span>Train Number <i>*</i></span><div className="modern-input"><Search size={16}/><input value={trainQuery} onFocus={() => setTrainOpen(true)} onChange={e => { setTrainQuery(e.target.value); setTrainOpen(true); setRailValidation(null); }} placeholder="Search train number or name" autoComplete="off" /></div>
+                {trainOpen && <div className="train-suggestions">{trainSuggestions.length ? trainSuggestions.map(train => <button type="button" key={train.number} onMouseDown={() => { setTrainQuery(`${train.number} - ${train.name}`); setTrainOpen(false); setRailValidation(null); }}><b>{train.number}</b><span>{train.name}</span></button>) : <div className="station-empty">Train data is syncing. Try the 5-digit train number.</div>}</div>}
+              </label>
+              <div className="rail-verify-row"><button type="button" className="rail-verify-button" onClick={verifyRailJourney} disabled={railChecking}>{railChecking ? "Verifying..." : "Verify Train & Route"}</button>{railValidation && <span className={railValidation.valid ? "rail-valid" : "rail-invalid"}>{railValidation.valid ? `✓ Verified • ${displayTrainName} • Departure ${displayDeparture}` : `✕ ${railValidation.message}`}</span>}</div>
             </div>
-            <div className="expiry-strip"><span className="expiry-icon">◷</span><div><b>Listing will automatically expire at train departure time</b><small>Departure: 04:00 PM&nbsp; • &nbsp;Duration: ~17h 50m</small></div></div>
+            <div className="expiry-strip"><span className="expiry-icon">◷</span><div><b>Listing will automatically expire at train departure time</b><small>{railValidation?.valid ? `Departure: ${railValidation.departureTime} • ${railValidation.durationMinutes ? `Duration: ~${Math.floor(railValidation.durationMinutes/60)}h ${railValidation.durationMinutes%60}m` : "Duration unavailable"}` : "Verify the train and route to calculate departure automatically."}</small></div></div>
           </section>
 
           <section className="listing-modern-card">
@@ -205,7 +251,7 @@ function CreateListingPage({ onBack }) {
           <section className="listing-modern-card additional-card">
             <div className="modern-section-head"><span>4</span><div><h2>Additional Information <em>(Optional)</em></h2><p>Add a short note buyers should know.</p></div><small className="char-count">0/500</small></div>
             <label className="modern-field"><span>Description / Note</span><textarea defaultValue="Selling confirmed/RAC tickets for New Delhi to Howrah. Genuine buyers only. DM for more details." maxLength={500}/></label>
-            <div className="modern-actions"><button onClick={onBack}>Cancel</button><button className="modern-primary">Post Listing <ArrowRight size={15}/></button></div>
+            <div className="modern-actions"><button onClick={onBack}>Cancel</button><button className="modern-primary" disabled={!railValidation?.valid || !selectedTrainNumber || !selectedFromCode || !selectedToCode}>Post Listing <ArrowRight size={15}/></button></div>
           </section>
         </section>
 
@@ -213,15 +259,15 @@ function CreateListingPage({ onBack }) {
           <div className="preview-title"><span className="preview-brand-icon">C</span><div><b>Listing Preview</b><small>This is how your listing will appear to others</small></div></div>
           <div className="modern-preview-card">
             <div className="preview-image-wrap"><img src="https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=1000&q=85" alt="Train" /><span className="active-listing">● Active Listing</span><button>Edit</button></div>
-            <div className="preview-route-row"><div><h3>New Delhi (NDLS) → Howrah (HWH)</h3><p>◷ &nbsp;20 Oct 2026 &nbsp;•&nbsp; 04:00 PM</p><p>▣ &nbsp;Train details shared on chat</p></div><strong>₹ {Number(price||0).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
+            <div className="preview-route-row"><div><h3>{fromStation} → {toStation}</h3><p>◷ &nbsp;{journeyDate || "Journey date"} &nbsp;•&nbsp; {displayDeparture}</p><p>▣ &nbsp;{selectedTrainNumber || "Train"} • {displayTrainName}</p></div><strong>₹ {Number(price||0).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
             <div className="preview-pills"><span>{ticketCount} Tickets</span>{bargain&&<span className="bargain-pill">Bargain Available</span>}</div>
             <div className="preview-separator"/>
             <h4 className="preview-block-title">♢ &nbsp; Tickets</h4>
-            <div className="preview-modern-tickets">{tickets.map((ticket,index)=><div className="preview-modern-ticket" key={index}><span className="preview-number">{index+1}</span><div><b>{ticket.ticketType}</b><section><small>{ticket.gender}</small><small className={ticket.status==="RAC"?"preview-rac":"preview-confirmed"}>{ticket.status}</small><small>{ticket.status==="RAC" ? "RAC "+(ticket.details||"") : ticket.details||"Seat type"}</small></section></div></div>)}</div>
+            <div className="preview-modern-tickets">{tickets.map((ticket,index)=><div className="preview-modern-ticket" key={index}><span className="preview-number">{index+1}</span><div><b>{ticket.ticketType}</b><section><small>{ticket.gender}</small><small className={ticket.status==="RAC"?"preview-rac":"preview-confirmed"}>{ticket.status}</small><small>{ticket.status==="RAC" ? `RAC ${ticket.details || ""}` : ticket.details||"Seat type"}</small></section></div></div>)}</div>
             <div className="preview-separator"/>
-            <div className="about-listing"><h4>▣ &nbsp; About this listing</h4><p>Selling {ticketCount} {confirmed===ticketCount?"confirmed":confirmed+" confirmed"} tickets for New Delhi to Howrah. Genuine buyers only. DM for more details.</p></div>
-            <div className="preview-expiry"><b>◷ &nbsp; This listing will expire automatically</b><small>At the train's scheduled departure time<br/>20 Oct 2026, 04:00 PM</small></div>
-            <button className="preview-post-button">Post Listing</button>
+            <div className="about-listing"><h4>▣ &nbsp; About this listing</h4><p>Selling {ticketCount} tickets for {fromStation} to {toStation}. {confirmed} confirmed{rac ? ` and ${rac} RAC` : ""}. Genuine buyers only.</p></div>
+            <div className="preview-expiry"><b>◷ &nbsp; This listing will expire automatically</b><small>At the train's scheduled departure time<br/>{journeyDate}, {displayDeparture}</small></div>
+            <button className="preview-post-button" disabled={!railValidation?.valid}>Post Listing</button>
           </div>
         </aside>
       </div>

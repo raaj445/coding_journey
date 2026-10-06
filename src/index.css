@@ -283,3 +283,31 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 
 .marketplace-train-icon{width:58%;height:58%;object-fit:contain;border-radius:18px;display:block}
 .detail-train-icon{width:68%;height:68%;object-fit:contain;border-radius:22px;display:block}
+
+
+/* My Listings */
+.my-listings-shell{min-height:100vh;background:#f8f7ff;color:#17172b;padding:42px 6vw 70px}
+.my-listings-header{max-width:1180px;margin:0 auto 28px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.my-listings-back{border:0;background:transparent;color:#6338e8;font-weight:700;padding:0;margin-bottom:22px;cursor:pointer}
+.my-listings-kicker{display:block;color:#6840e9;font-size:11px;font-weight:800;letter-spacing:.16em;margin-bottom:7px}
+.my-listings-header h1{margin:0;font-size:34px;letter-spacing:-.03em}
+.my-listings-header p{margin:8px 0 0;color:#77758a}
+.my-listings-count{background:#eee9ff;color:#6338e8;border-radius:999px;padding:10px 16px;font-weight:800}
+.my-listings-list{max-width:1180px;margin:auto;display:grid;gap:14px}
+.my-listing-full-card{background:#fff;border:1px solid #e7e4f2;border-radius:18px;padding:14px;display:grid;grid-template-columns:150px 1fr auto;gap:20px;align-items:center;box-shadow:0 5px 18px rgba(38,29,83,.05)}
+.my-listing-full-image{height:120px;border-radius:13px;background:#f0ecff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.my-listing-full-image img{width:100%;height:100%;object-fit:cover;display:block}
+.my-listing-full-main h2{margin:5px 0 8px;font-size:20px}
+.my-listing-full-main p{display:flex;align-items:center;gap:7px;margin:5px 0;color:#77758a;font-size:13px}
+.my-listing-full-main small{display:block;margin-top:9px;color:#9895a8}
+.my-listing-kind{font-size:10px;font-weight:900;letter-spacing:.14em;color:#6338e8}
+.my-listing-full-side{text-align:right;min-width:130px}
+.my-listing-full-side strong{display:block;font-size:21px}
+.my-listing-full-side>span{display:block;color:#9995aa;font-size:11px;margin:2px 0 9px}
+.my-listing-full-side em{display:inline-block;font-style:normal;font-size:10px;font-weight:800;padding:5px 9px;border-radius:999px;background:#eeeaf8;color:#777286}
+.my-listing-full-side .listing-active{background:#e9f9ef;color:#168548}
+.my-listing-full-side>b{display:block;color:#168548;font-size:10px;margin-top:8px}
+.my-listings-empty{max-width:1180px;margin:auto;background:#fff;border:1px dashed #d9d4eb;border-radius:18px;padding:60px 20px;display:flex;align-items:center;justify-content:center;gap:10px;flex-direction:column;color:#77758a;text-align:center}
+.my-listings-empty b{color:#29263e}
+.my-listings-empty.error{color:#c43f54}
+@media(max-width:760px){.my-listings-shell{padding:28px 16px 50px}.my-listings-header{align-items:flex-start;flex-direction:column}.my-listing-full-card{grid-template-columns:92px 1fr;gap:13px}.my-listing-full-image{height:92px}.my-listing-full-side{grid-column:2;text-align:left}.my-listing-full-main h2{font-size:16px}}

@@ -97,7 +97,7 @@ function StationPicker({ label, value, onChange, stations, required = true, clea
   );
 }
 
-function CreateListingPage({ onBack, onMovie, onConcert, onNavigate, onLogout }) {
+function CreateListingPage({ onBack, onMovie, onConcert, onNavigate, onLogout, activeSub = "TRAIN" }) {
   const [stations, setStations] = useState([]);
   const [fromStation, setFromStation] = useState("New Delhi (NDLS)");
   const [toStation, setToStation] = useState("Howrah (HWH)");
@@ -247,7 +247,7 @@ function CreateListingPage({ onBack, onMovie, onConcert, onNavigate, onLogout })
       </header>
 
       <div className="listing-layout">
-        <UniversalSidebar activeNav="Create Listing" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
+        <UniversalSidebar activeNav="Create Listing" activeSub={activeSub} onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
 
         <section className="listing-main-column">
           <div className="listing-page-title">

@@ -94,7 +94,7 @@ function StationPicker({ label, value, onChange, stations, required = true, clea
   );
 }
 
-function CreateListingPage({ onBack, onMovie }) {
+function CreateListingPage({ onBack, onMovie, onConcert }) {
   const [stations, setStations] = useState([]);
   const [fromStation, setFromStation] = useState("New Delhi (NDLS)");
   const [toStation, setToStation] = useState("Howrah (HWH)");
@@ -248,7 +248,7 @@ function CreateListingPage({ onBack, onMovie }) {
           <button className="listing-nav-item muted" onClick={onBack}><Home size={18}/><span>Roommate / Flatmate<small>Coming Soon</small></span></button>
           <button className="listing-nav-item active"><Ticket size={18}/><span>Train Ticket</span></button>
           <button className="listing-nav-item" onClick={onMovie}><Ticket size={18}/><span>Movie Ticket</span></button>
-          <button className="listing-nav-item"><Music2 size={18}/><span>Concert Ticket</span></button>
+          <button className="listing-nav-item" onClick={onConcert}><Music2 size={18}/><span>Concert Ticket</span></button>
         </aside>
 
         <section className="listing-main-column">
@@ -381,9 +381,21 @@ function Dashboard({ user, onLogout }) {
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
   if (activeNav === "Movie Ticket") return <MovieTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} states={states} citiesByState={citiesByState} />;
   if (activeNav === "Concert Ticket") return <ConcertTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onMovie={() => setActiveNav("Movie Ticket")} states={states} citiesByState={citiesByState} />;
-  if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} />;
+  if (activeNav === "Find People") return (
+    <main className="coming-soon-shell">
+      <button className="coming-soon-back" onClick={() => setActiveNav("Home")}><ArrowRight size={16} style={{transform:"rotate(180deg)"}} /> Back to Dashboard</button>
+      <section className="coming-soon-card">
+        <div className="coming-soon-icon"><Users size={30}/></div>
+        <span>CONNECTHUB</span>
+        <h1>Roommate & People Finder</h1>
+        <p>Find roommates, friends and people with similar interests. This section is coming next.</p>
+        <button onClick={() => setActiveNav("Home")}>Back to Home</button>
+      </section>
+    </main>
+  );
+  if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} />;
   const navItems = [
-    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Movie Ticket", icon: Ticket }, { label: "Concert Ticket", icon: Music2 }, { label: "Find People", icon: Users },
+    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Find People", icon: Users },
     { label: "Communities", icon: HeartHandshake }, { label: "Messages", icon: MessageCircle }, { label: "My Listings", icon: Ticket },
     { label: "Bookmarks", icon: Bookmark }, { label: "Profile", icon: UserRound }, { label: "Settings", icon: Settings },
   ];
@@ -438,8 +450,8 @@ function Dashboard({ user, onLogout }) {
           <section className="dashboard-section">
             <div className="section-heading"><h2>Quick Actions</h2></div>
             <div className="quick-grid">
-              <button className="quick-card lavender"><span><Ticket size={23} /></span><div><b>Find Tickets</b><small>Concerts, Movies, Trains</small></div><ArrowRight size={18} /></button>
-              <button className="quick-card pink"><span><Users size={23} /></span><div><b>Find People</b><small>Roommates, Friends</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card lavender" onClick={() => setActiveNav("Home")}><span><Ticket size={23} /></span><div><b>Find Tickets</b><small>Concerts, Movies, Trains</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card pink" onClick={() => setActiveNav("Find People")}><span><Users size={23} /></span><div><b>Find People</b><small>Roommates, Friends</small></div><ArrowRight size={18} /></button>
               <button className="quick-card green"><span><Users size={23} /></span><div><b>Explore Communities</b><small>Join groups & interests</small></div><ArrowRight size={18} /></button>
               <button className="quick-card yellow" onClick={() => setActiveNav("Create Listing")}><span><Plus size={23} /></span><div><b>Create a Listing</b><small>Sell or find what you need</small></div><ArrowRight size={18} /></button>
             </div>

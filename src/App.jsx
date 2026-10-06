@@ -93,7 +93,7 @@ function StationPicker({ label, value, onChange, stations, required = true, clea
   );
 }
 
-function CreateListingPage({ onBack }) {
+function CreateListingPage({ onBack, onMovie }) {
   const [stations, setStations] = useState([]);
   const [fromStation, setFromStation] = useState("New Delhi (NDLS)");
   const [toStation, setToStation] = useState("Howrah (HWH)");

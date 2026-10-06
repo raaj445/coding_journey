@@ -158,10 +158,10 @@ function CreateListingPage({ onBack }) {
     setRailValidation(null);
     try {
       const { data, error } = await supabase.functions.invoke("validate-rail-journey", {
-        body: { trainNumber, fromCode: selectedFromCode, toCode: selectedToCode, journeyDate }
+        body: { trainNumber, fromCode: selectedFromCode, fromName: fromStation, toCode: selectedToCode, toName: toStation, journeyDate }
       });
-      if (error) throw error;
-      setRailValidation(data);
+      if (error && !data) throw error;
+      setRailValidation(data || { valid: false, message: error?.message || "Railway verification failed." });
     } catch {
       setRailValidation({ valid: false, message: "Railway verification is temporarily unavailable. Please try again." });
     } finally {
@@ -256,7 +256,7 @@ function CreateListingPage({ onBack }) {
               </label>
               <div className="rail-verify-row"><button type="button" className="rail-verify-button" onClick={verifyRailJourney} disabled={railChecking}>{railChecking ? "Verifying..." : "Verify Train & Route"}</button>{railValidation && <span className={railValidation.valid ? "rail-valid" : "rail-invalid"}>{railValidation.valid ? `✓ Verified • ${displayTrainName} • Departure ${displayDeparture}` : `✕ ${railValidation.message}`}</span>}</div>
             </div>
-            <div className="expiry-strip"><span className="expiry-icon">◷</span><div><b>Listing will automatically expire at train departure time</b><small>{railValidation?.valid ? `Departure: ${railValidation.departureTime} • ${railValidation.durationMinutes ? `Duration: ~${Math.floor(railValidation.durationMinutes/60)}h ${railValidation.durationMinutes%60}m` : "Duration unavailable"}` : "Verify the train and route to calculate departure automatically."}</small></div></div>
+            <div className="expiry-strip"><span className="expiry-icon">◷</span><div><b>Listing will automatically expire at train departure time</b><small>{railValidation?.valid ? `Departure from ${fromStation.split(" (")[0]}: ${railValidation.departureTime} • ${railValidation.durationMinutes ? `Duration: ~${Math.floor(railValidation.durationMinutes/60)}h ${railValidation.durationMinutes%60}m` : "Duration unavailable"}` : "Verify the train and route to calculate departure automatically."}</small></div></div>
           </section>
 
           <section className="listing-modern-card">
@@ -300,14 +300,14 @@ function CreateListingPage({ onBack }) {
           <div className="preview-title"><span className="preview-brand-icon">C</span><div><b>Listing Preview</b><small>This is how your listing will appear to others</small></div></div>
           <div className="modern-preview-card">
             <div className="preview-image-wrap"><img src="https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=1000&q=85" alt="Train" /><span className="active-listing">● Active Listing</span><button>Edit</button></div>
-            <div className="preview-route-row"><div><h3>{fromStation} → {toStation}</h3><p>◷ &nbsp;{journeyDate || "Journey date"} &nbsp;•&nbsp; {displayDeparture}</p><p>▣ &nbsp;{selectedTrainNumber || "Train"} • {displayTrainName}</p></div><strong>₹ {Number(price||0).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
+            <div className="preview-route-row"><div><h3>{fromStation} → {toStation}</h3><p>◷ &nbsp;{journeyDate || "Journey date"} &nbsp;•&nbsp; Departure {displayDeparture}{railValidation?.valid && railValidation.arrivalTime ? ` • Arrival ${railValidation.arrivalTime}` : ""}</p><p>▣ &nbsp;{selectedTrainNumber || "Train"} • {displayTrainName}</p></div><strong>₹ {Number(price||0).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
             <div className="preview-pills"><span>{ticketCount} Tickets</span>{bargain&&<span className="bargain-pill">Bargain Available</span>}</div>
             <div className="preview-separator"/>
             <h4 className="preview-block-title">♢ &nbsp; Tickets</h4>
             <div className="preview-modern-tickets">{tickets.map((ticket,index)=><div className="preview-modern-ticket" key={index}><span className="preview-number">{index+1}</span><div><b>{ticket.ticketType}</b><section><small>{ticket.gender}</small><small className={ticket.status==="RAC"?"preview-rac":"preview-confirmed"}>{ticket.status}</small><small>{ticket.status==="RAC" ? `RAC ${ticket.details || ""}` : ticket.details||"Seat type"}</small></section></div></div>)}</div>
             <div className="preview-separator"/>
             <div className="about-listing"><h4>▣ &nbsp; About this listing</h4><p>Selling {ticketCount} tickets for {fromStation} to {toStation}. {confirmed} confirmed{rac ? ` and ${rac} RAC` : ""}. Genuine buyers only.</p></div>
-            <div className="preview-expiry"><b>◷ &nbsp; This listing will expire automatically</b><small>At the train's scheduled departure time<br/>{journeyDate}, {displayDeparture}</small></div>
+            <div className="preview-expiry"><b>◷ &nbsp; This listing will expire automatically</b><small>At the train's scheduled departure time<br/>{journeyDate}, {fromStation.split(" (")[0]} departs at {displayDeparture}</small></div>
             <button className="preview-post-button" onClick={postListing} disabled={posting || !railValidation?.valid}>{posting ? "Posting..." : "Post Listing"}</button>
           </div>
         </aside>

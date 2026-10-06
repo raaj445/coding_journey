@@ -6,7 +6,7 @@ import UniversalSidebar from "./UniversalSidebar";
 const TICKET_TYPES = ["General Admission", "Standing", "Seated", "VIP", "Premium", "Early Bird", "Other"];
 const SEAT_TYPES = ["General", "Standing", "Floor", "Lower", "Upper", "Balcony", "Box", "Other"];
 
-export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, states = [], citiesByState = {}, onNavigate, onLogout }) {
+export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, states = [], citiesByState = {}, onNavigate, onLogout, activeSub = "CONCERT" }) {
   const [eventName, setEventName] = useState("");
   const [artistName, setArtistName] = useState("");
   const [stateName, setStateName] = useState("");
@@ -96,7 +96,7 @@ export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, sta
       </header>
 
       <div className="listing-layout">
-        <UniversalSidebar activeNav="Create Listing" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
+        <UniversalSidebar activeNav="Create Listing" activeSub={activeSub} onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
 
         <section className="listing-main-column">
           <div className="listing-page-title">

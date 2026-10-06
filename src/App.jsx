@@ -122,7 +122,10 @@ function CreateListingPage({ onBack }) {
   ]);
   const [samePrice, setSamePrice] = useState(true);
   const [price, setPrice] = useState("1500");
+  const [individualPrices, setIndividualPrices] = useState(["1500","1500","1500"]);
   const [bargain, setBargain] = useState(true);
+  const [description, setDescription] = useState("Selling genuine train tickets. Please verify all journey details before contacting the seller.");
+  const [posting, setPosting] = useState(false);
 
   function changeTicketCount(next) {
     const count = Math.max(1, Math.min(10, next));
@@ -130,6 +133,7 @@ function CreateListingPage({ onBack }) {
     setTickets(current => Array.from({ length: count }, (_, index) =>
       current[index] || { ticketType: "Sleeper (SL)", gender: "Male", status: "Confirmed", details: "" }
     ));
+    setIndividualPrices(current => Array.from({ length: count }, (_, index) => current[index] || price));
   }
 
   function updateTicket(index, field, value) {
@@ -162,6 +166,42 @@ function CreateListingPage({ onBack }) {
       setRailValidation({ valid: false, message: "Railway verification is temporarily unavailable. Please try again." });
     } finally {
       setRailChecking(false);
+    }
+  }
+
+  async function postListing() {
+    if (!railValidation?.valid || !selectedTrainNumber || !selectedFromCode || !selectedToCode) return;
+    setPosting(true);
+    try {
+      const payloadTickets = tickets.map((ticket, index) => ({
+        ticketType: ticket.ticketType,
+        gender: ticket.gender,
+        status: ticket.status,
+        berthType: ticket.status === "Confirmed" ? ticket.details : null,
+        racNumber: ticket.status === "RAC" ? Number(ticket.details) : null,
+        price: Number(individualPrices[index] || 0)
+      }));
+      const { data, error } = await supabase.functions.invoke("create-train-listing", {
+        body: {
+          trainNumber: selectedTrainNumber,
+          fromCode: selectedFromCode,
+          toCode: selectedToCode,
+          journeyDate,
+          priceMode: samePrice ? "SAME" : "INDIVIDUAL",
+          pricePerTicket: Number(price || 0),
+          readyToBargain: bargain,
+          description,
+          tickets: payloadTickets
+        }
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message || "Listing failed");
+      alert("Listing posted successfully!");
+      onBack();
+    } catch (error) {
+      alert(error?.message || "Listing could not be posted. Please try again.");
+    } finally {
+      setPosting(false);
     }
   }
 
@@ -246,12 +286,13 @@ function CreateListingPage({ onBack }) {
               <label className={!samePrice ? "modern-price-choice selected" : "modern-price-choice"}><input type="radio" checked={!samePrice} onChange={()=>setSamePrice(false)}/><span><b>Different price for each ticket</b><small>Set individual prices for each ticket</small></span></label>
             </div>
             <div className="modern-price-row"><label className="modern-field"><span>Price per ticket <i>*</i></span><div className="price-input"><b>₹</b><input value={price} onChange={e=>setPrice(e.target.value.replace(/[^0-9]/g,""))}/></div></label><div className="bargain-control"><div><b>Ready to Bargain</b><small>Buyers can send you offers</small></div><button className={bargain?"on":""} onClick={()=>setBargain(!bargain)}><span/></button></div></div>
+            {!samePrice && <div className="individual-price-list">{tickets.map((ticket,index)=><label className="modern-field" key={index}><span>Ticket {index+1} price <i>*</i></span><div className="price-input"><b>₹</b><input value={individualPrices[index] || ""} onChange={e => setIndividualPrices(current => current.map((value,i) => i===index ? e.target.value.replace(/[^0-9]/g,"") : value))}/></div></label>)}</div>}
           </section>
 
           <section className="listing-modern-card additional-card">
             <div className="modern-section-head"><span>4</span><div><h2>Additional Information <em>(Optional)</em></h2><p>Add a short note buyers should know.</p></div><small className="char-count">0/500</small></div>
-            <label className="modern-field"><span>Description / Note</span><textarea defaultValue="Selling confirmed/RAC tickets for New Delhi to Howrah. Genuine buyers only. DM for more details." maxLength={500}/></label>
-            <div className="modern-actions"><button onClick={onBack}>Cancel</button><button className="modern-primary" disabled={!railValidation?.valid || !selectedTrainNumber || !selectedFromCode || !selectedToCode}>Post Listing <ArrowRight size={15}/></button></div>
+            <label className="modern-field"><span>Description / Note</span><textarea value={description} onChange={e => setDescription(e.target.value)} maxLength={500}/></label>
+            <div className="modern-actions"><button onClick={onBack}>Cancel</button><button className="modern-primary" onClick={postListing} disabled={posting || !railValidation?.valid || !selectedTrainNumber || !selectedFromCode || !selectedToCode}>{posting ? "Posting..." : "Post Listing"} <ArrowRight size={15}/></button></div>
           </section>
         </section>
 
@@ -267,7 +308,7 @@ function CreateListingPage({ onBack }) {
             <div className="preview-separator"/>
             <div className="about-listing"><h4>▣ &nbsp; About this listing</h4><p>Selling {ticketCount} tickets for {fromStation} to {toStation}. {confirmed} confirmed{rac ? ` and ${rac} RAC` : ""}. Genuine buyers only.</p></div>
             <div className="preview-expiry"><b>◷ &nbsp; This listing will expire automatically</b><small>At the train's scheduled departure time<br/>{journeyDate}, {displayDeparture}</small></div>
-            <button className="preview-post-button" disabled={!railValidation?.valid}>Post Listing</button>
+            <button className="preview-post-button" onClick={postListing} disabled={posting || !railValidation?.valid}>{posting ? "Posting..." : "Post Listing"}</button>
           </div>
         </aside>
       </div>

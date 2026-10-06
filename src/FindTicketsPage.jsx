@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bell, CalendarDays, ChevronDown, Clock3, Heart, Home, MapPin, MessageCircle, Music2, Search, SlidersHorizontal, Ticket, UserRound, Users, X, Tag } from "lucide-react";
+import { ArrowLeft, Bell, CalendarDays, ChevronDown, Clock3, Heart, Home, MapPin, MessageCircle, Music2, Search, SlidersHorizontal, Ticket, TrainFront, UserRound, Users, X, Tag } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
 const money = value => value == null ? "—" : "₹" + Number(value).toLocaleString("en-IN");
@@ -107,7 +107,7 @@ export default function FindTicketsPage({ onBack }) {
               {filtered.map(item=>(
                 <article key={item.kind+"-"+item.id} className={selected?.id===item.id&&selected?.kind===item.kind?"marketplace-card selected":"marketplace-card"} onClick={()=>choose(item)}>
                   <div className="marketplace-card-image">
-                    {item.kind==="MOVIE"&&item.poster_url ? <img src={item.poster_url} alt=""/> : <div className={"marketplace-type-art "+item.kind.toLowerCase()}>{item.kind==="CONCERT"?<Music2 size={32}/>:<Ticket size={32}/>}</div>}
+                    {item.kind==="MOVIE"&&item.poster_url ? <img src={item.poster_url} alt=""/> : <div className={"marketplace-type-art "+item.kind.toLowerCase()}>{item.kind==="CONCERT"?<Music2 size={32}/>:item.kind==="TRAIN"?<TrainFront size={32}/>:<Ticket size={32}/>}</div>}
                   </div>
                   <div className="marketplace-card-main">
                     <span className="marketplace-kind">{item.kind}</span>
@@ -126,7 +126,7 @@ export default function FindTicketsPage({ onBack }) {
 
         {selected && <aside className="marketplace-detail">
           <button className="detail-close" onClick={()=>setSelected(null)}><X size={18}/></button>
-          <div className="detail-hero">{selected.kind==="MOVIE"&&selected.poster_url?<img src={selected.poster_url} alt=""/>:<div className={"detail-art "+selected.kind.toLowerCase()}>{selected.kind==="CONCERT"?<Music2 size={52}/>:<Ticket size={52}/>}</div>}</div>
+          <div className="detail-hero">{selected.kind==="MOVIE"&&selected.poster_url?<img src={selected.poster_url} alt=""/>:<div className={"detail-art "+selected.kind.toLowerCase()}>{selected.kind==="CONCERT"?<Music2 size={52}/>:selected.kind==="TRAIN"?<TrainFront size={52}/>:<Ticket size={52}/>}</div>}</div>
           <div className="detail-body">
             <span className="marketplace-kind">{selected.kind}</span>
             <h2>{selected.title}</h2>

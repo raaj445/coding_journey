@@ -381,8 +381,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   .universal-sidebar>.logout-nav{margin-top:6px;width:auto;min-width:max-content}
 }
 
-/* Larger marketplace detail typography */
-.marketplace-detail .detail-body h2{font-size:30px;line-height:1.18}
+/* Marketplace detail readability: enlarge only the section shown in the ticket-detail screenshot */
 .marketplace-detail .detail-body>p{font-size:14px;line-height:1.45}
 .marketplace-detail .detail-expiry{font-size:13px;padding:13px;margin:16px 0}
 .marketplace-detail .detail-body h4{font-size:17px;margin:21px 0 11px}
@@ -390,9 +389,6 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .marketplace-detail .detail-info span{font-size:13px}
 .marketplace-detail .detail-info b{font-size:13px}
 .marketplace-detail .detail-description{font-size:14px!important;line-height:1.7}
-.marketplace-detail .detail-actions button{font-size:13px;padding:13px 10px}
-.marketplace-detail .marketplace-kind{font-size:10px}
-
 
 /* Page layouts that keep the shared navigation visible */
 .my-listings-shell{display:grid;grid-template-columns:210px minmax(0,1fr);padding:0;align-items:stretch}

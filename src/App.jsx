@@ -97,7 +97,7 @@ function StationPicker({ label, value, onChange, stations, required = true, clea
   );
 }
 
-function CreateListingPage({ onBack, onMovie, onConcert }) {
+function CreateListingPage({ onBack, onMovie, onConcert, onNavigate, onLogout }) {
   const [stations, setStations] = useState([]);
   const [fromStation, setFromStation] = useState("New Delhi (NDLS)");
   const [toStation, setToStation] = useState("Howrah (HWH)");
@@ -247,12 +247,7 @@ function CreateListingPage({ onBack, onMovie, onConcert }) {
       </header>
 
       <div className="listing-layout">
-        <aside className="listing-left-nav">
-          <button className="listing-nav-item muted" onClick={onBack}><Home size={18}/><span>Roommate / Flatmate<small>Coming Soon</small></span></button>
-          <button className="listing-nav-item active"><Ticket size={18}/><span>Train Ticket</span></button>
-          <button type="button" className="listing-nav-item" onClick={() => onMovie?.()}><Ticket size={18}/><span>Movie Ticket</span></button>
-          <button type="button" className="listing-nav-item" onClick={() => onConcert?.()}><Music2 size={18}/><span>Concert Ticket</span></button>
-        </aside>
+        <UniversalSidebar activeNav="Create Listing" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
 
         <section className="listing-main-column">
           <div className="listing-page-title">
@@ -456,8 +451,8 @@ function Dashboard({ user, onLogout }) {
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Amartya";
   const firstName = name.split(" ")[0];
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
-  if (activeNav === "Movie Ticket") return <MovieTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} states={states} citiesByState={citiesByState} />;
-  if (activeNav === "Concert Ticket") return <ConcertTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onMovie={() => setActiveNav("Movie Ticket")} states={states} citiesByState={citiesByState} />;
+  if (activeNav === "Movie Ticket") return <MovieTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
+  if (activeNav === "Concert Ticket") return <ConcertTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onMovie={() => setActiveNav("Movie Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
   if (activeNav === "Find People") return (
     <main className="coming-soon-shell">
       <button className="coming-soon-back" onClick={() => setActiveNav("Home")}><ArrowRight size={16} style={{transform:"rotate(180deg)"}} /> Back to Dashboard</button>

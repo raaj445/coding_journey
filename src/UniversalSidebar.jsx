@@ -1,4 +1,4 @@
-import { Bookmark, HeartHandshake, Home, LogOut, MessageCircle, Plus, Settings, Ticket, UserRound, Users } from "lucide-react";
+import { Heart, HeartHandshake, Home, LogOut, MessageCircle, Plus, Settings, Ticket, UserRound, Users } from "lucide-react";
 
 const items = [
   ["Home", Home],
@@ -8,7 +8,7 @@ const items = [
   ["Communities", HeartHandshake],
   ["Messages", MessageCircle],
   ["My Listings", Ticket],
-  ["Bookmarks", Bookmark],
+  ["Favorites", Heart],
   ["Profile", UserRound],
   ["Settings", Settings],
 ];

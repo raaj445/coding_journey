@@ -6,7 +6,7 @@ import { TRAIN_ICON_SRC } from "./trainIcon";
 const money = value => value == null ? "—" : "₹" + Number(value).toLocaleString("en-IN");
 const dateText = value => value ? new Date(value + (value.length === 10 ? "T00:00:00" : "")).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—";
 
-export default function FindTicketsPage({ onBack }) {
+export default function FindTicketsPage({ user, onBack }) {
   const [category,setCategory]=useState("ALL");
   const [search,setSearch]=useState("");
   const [state,setState]=useState("");
@@ -24,9 +24,9 @@ export default function FindTicketsPage({ onBack }) {
     async function load(){
       setLoading(true); setError("");
       const [tr,mv,co]=await Promise.all([
-        supabase.from("listings").select("id,seller_id,train_number,train_name,from_name,to_name,journey_date,departure_at,status,ticket_count,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").gt("departure_at",new Date().toISOString()).order("departure_at",{ascending:true}).limit(60),
-        supabase.from("movie_listings").select("id,seller_id,movie_name,poster_url,state,city,cinema_hall,show_date,show_time,show_at,language,format,status,ticket_count,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").gt("show_at",new Date().toISOString()).order("show_at",{ascending:true}).limit(60),
-        supabase.from("concert_listings").select("id,seller_id,event_name,artist_name,state,city,venue,event_date,event_time,event_at,status,ticket_count,ticket_type,seat_type,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").gt("event_at",new Date().toISOString()).order("event_at",{ascending:true}).limit(60)
+        supabase.from("listings").select("id,seller_id,train_number,train_name,from_name,to_name,journey_date,departure_at,status,ticket_count,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").neq("seller_id", user?.id || "").gt("departure_at",new Date().toISOString()).order("departure_at",{ascending:true}).limit(60),
+        supabase.from("movie_listings").select("id,seller_id,movie_name,poster_url,state,city,cinema_hall,show_date,show_time,show_at,language,format,status,ticket_count,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").neq("seller_id", user?.id || "").gt("show_at",new Date().toISOString()).order("show_at",{ascending:true}).limit(60),
+        supabase.from("concert_listings").select("id,seller_id,event_name,artist_name,state,city,venue,event_date,event_time,event_at,status,ticket_count,ticket_type,seat_type,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").neq("seller_id", user?.id || "").gt("event_at",new Date().toISOString()).order("event_at",{ascending:true}).limit(60)
       ]);
       if(cancelled)return;
       const errors=[tr.error,mv.error,co.error].filter(Boolean);
@@ -40,7 +40,7 @@ export default function FindTicketsPage({ onBack }) {
       setLoading(false);
     }
     load(); return ()=>{cancelled=true};
-  },[]);
+  },[user?.id]);
 
   const states=[...new Set(listings.map(x=>x.state).filter(Boolean))].sort();
   const cities=[...new Set(listings.map(x=>x.city).filter(Boolean))].sort();

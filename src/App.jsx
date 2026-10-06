@@ -454,8 +454,8 @@ function Dashboard({ user, onLogout }) {
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Amartya";
   const firstName = name.split(" ")[0];
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
-  if (activeNav === "Movie Ticket") return <MovieTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
-  if (activeNav === "Concert Ticket") return <ConcertTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onMovie={() => setActiveNav("Movie Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
+  if (activeNav === "Movie Ticket") return <MovieTicketListingPage activeSub="MOVIE" onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
+  if (activeNav === "Concert Ticket") return <ConcertTicketListingPage activeSub="CONCERT" onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onMovie={() => setActiveNav("Movie Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} states={states} citiesByState={citiesByState} />;
   if (activeNav === "Find People") return (
     <main className="coming-soon-shell coming-soon-with-sidebar">
       <UniversalSidebar activeNav="Find People" onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />
@@ -472,7 +472,7 @@ function Dashboard({ user, onLogout }) {
     </main>
   );
   if (activeNav === "Find Tickets") return <FindTicketsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
-  if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
+  if (activeNav === "Create Listing") return <CreateListingPage activeSub="TRAIN" onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   const navItems = [
     { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Find People", icon: Users },
@@ -512,14 +512,7 @@ function Dashboard({ user, onLogout }) {
         </div>
       </header>
       <div className="dashboard-body">
-        <aside className="dashboard-sidebar">
-          <nav>
-            {navItems.map(({ label, icon: Icon }) => (
-              <button key={label} className={activeNav === label ? "side-nav active" : "side-nav"} onClick={() => setActiveNav(label)}><Icon size={18} /><span>{label}</span></button>
-            ))}
-          </nav>
-          <button className="side-nav logout-nav" onClick={onLogout}><LogOut size={18} /><span>Log out</span></button>
-        </aside>
+        <UniversalSidebar activeNav={activeNav} activeSub={activeNav === "Create Listing" ? "TRAIN" : activeNav === "Movie Ticket" ? "MOVIE" : activeNav === "Concert Ticket" ? "CONCERT" : ""} onNavigate={setActiveNav} onLogout={onLogout} />
         <section className="dashboard-main">
           <div className="welcome-panel">
             <div><p className="welcome-kicker">YOUR CONNECTHUB SPACE</p><h1>Good evening, {firstName} <span>👋</span></h1><p>What are you looking for today?</p></div>

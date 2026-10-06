@@ -311,3 +311,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .my-listings-empty b{color:#29263e}
 .my-listings-empty.error{color:#c43f54}
 @media(max-width:760px){.my-listings-shell{padding:28px 16px 50px}.my-listings-header{align-items:flex-start;flex-direction:column}.my-listing-full-card{grid-template-columns:92px 1fr;gap:13px}.my-listing-full-image{height:92px}.my-listing-full-side{grid-column:2;text-align:left}.my-listing-full-main h2{font-size:16px}}
+
+.preview-train-artwork{width:100%;height:100%;display:block}
+.marketplace-train-icon,.detail-train-icon{width:100%;height:100%;display:block;object-fit:cover}
+.my-listing-train-artwork{width:100%;height:100%;display:block}

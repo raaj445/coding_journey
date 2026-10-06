@@ -517,6 +517,107 @@ function MyListingsPage({ user, onBack, onNavigate, onLogout }) {
   );
 }
 
+function FavoritesPage({ user, onBack, onNavigate, onLogout }) {
+  const [favorites,setFavorites]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
+
+  useEffect(()=>{
+    let mounted=true;
+    async function load(){
+      if(!user?.id){setFavorites([]);setLoading(false);return;}
+      setLoading(true);setError("");
+      const {data:favoriteRows,error:favoriteError}=await supabase
+        .from("listing_favorites")
+        .select("id,listing_kind,listing_id,created_at")
+        .eq("user_id",user.id)
+        .order("created_at",{ascending:false});
+      if(favoriteError){if(mounted){setError(favoriteError.message);setLoading(false);}return;}
+      const rows=favoriteRows||[];
+      const byKind={TRAIN:[],MOVIE:[],CONCERT:[]};
+      rows.forEach(row=>{if(byKind[row.listing_kind])byKind[row.listing_kind].push(row.listing_id);});
+      const [tr,mv,co]=await Promise.all([
+        byKind.TRAIN.length ? supabase.from("listings").select("id,train_number,train_name,from_name,to_name,journey_date,departure_at,status,ticket_count,price_per_ticket,ready_to_bargain,description").in("id",byKind.TRAIN) : Promise.resolve({data:[],error:null}),
+        byKind.MOVIE.length ? supabase.from("movie_listings").select("id,movie_name,poster_url,state,city,cinema_hall,show_date,show_time,show_at,status,ticket_count,price_per_ticket,ready_to_bargain,description").in("id",byKind.MOVIE) : Promise.resolve({data:[],error:null}),
+        byKind.CONCERT.length ? supabase.from("concert_listings").select("id,event_name,artist_name,state,city,venue,event_date,event_time,event_at,status,ticket_count,price_per_ticket,ready_to_bargain,description").in("id",byKind.CONCERT) : Promise.resolve({data:[],error:null})
+      ]);
+      if(!mounted)return;
+      const fetched=new Map();
+      (tr.data||[]).forEach(x=>fetched.set("TRAIN:"+x.id,{...x,kind:"TRAIN",title:x.train_name||"Train Ticket",place:(x.from_name||"—")+" → "+(x.to_name||"—"),eventAt:x.departure_at}));
+      (mv.data||[]).forEach(x=>fetched.set("MOVIE:"+x.id,{...x,kind:"MOVIE",title:x.movie_name||"Movie Ticket",place:(x.cinema_hall||"—")+" · "+(x.city||"—"),eventAt:x.show_at}));
+      (co.data||[]).forEach(x=>fetched.set("CONCERT:"+x.id,{...x,kind:"CONCERT",title:x.event_name||"Concert Ticket",place:(x.venue||"—")+" · "+(x.city||"—"),eventAt:x.event_at}));
+      setFavorites(rows.map(row=>({
+        ...row,
+        listing:fetched.get(row.listing_kind+":"+row.listing_id)||null
+      })));
+      setLoading(false);
+    }
+    load();
+    return ()=>{mounted=false};
+  },[user?.id]);
+
+  async function removeFavorite(row){
+    const {error:removeError}=await supabase.from("listing_favorites").delete().eq("user_id",user.id).eq("listing_kind",row.listing_kind).eq("listing_id",row.listing_id);
+    if(removeError){alert(removeError.message||"Could not remove favorite.");return;}
+    setFavorites(current=>current.filter(item=>item.id!==row.id));
+  }
+
+  const money=value=>value==null?"—":"₹"+Number(value).toLocaleString("en-IN");
+  const dateText=value=>value ? new Date(value+(value.length===10?"T00:00:00":"")).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—";
+
+  return (
+    <main className="favorites-shell">
+      <header className="marketplace-topbar">
+        <button className="marketplace-brand" onClick={onBack}><span><Heart size={18} fill="currentColor"/></span>Connect<span>Hub</span></button>
+        <div className="marketplace-search"><Search size={18}/><input placeholder="Search your favorites..." readOnly /></div>
+        <button className="marketplace-icon-btn active"><Heart size={20} fill="currentColor"/></button>
+        <button className="marketplace-icon-btn"><Bell size={19}/></button>
+        <span className="marketplace-avatar"><UserRound size={18}/></span>
+      </header>
+      <div className="favorites-body">
+        <UniversalSidebar activeNav="Favorites" onNavigate={onNavigate} onLogout={onLogout}/>
+        <section className="favorites-content">
+          <button className="favorites-back" onClick={onBack}>← Back to Dashboard</button>
+          <div className="favorites-heading">
+            <div><span>CONNECTHUB</span><h1>Favorites</h1><p>Save tickets you may want to check later.</p></div>
+            <strong>{favorites.length} saved</strong>
+          </div>
+          {loading ? <div className="favorites-empty">Loading your favorites...</div> :
+           error ? <div className="favorites-empty error">{error}</div> :
+           !favorites.length ? <div className="favorites-empty"><Heart size={34}/><b>No favorites yet</b><span>Tap the heart on any ticket in Find Tickets to save it here.</span><button onClick={()=>onNavigate?.("Find Tickets")}>Find Tickets</button></div> :
+           <div className="favorites-list">
+             {favorites.map(row=>{
+               const item=row.listing;
+               return (
+                 <article className={item ? "favorite-card" : "favorite-card unavailable"} key={row.id}>
+                   <div className="favorite-card-art">
+                     {item?.kind==="TRAIN" ? <TrainArtwork className="favorite-train-artwork"/> :
+                      item?.kind==="MOVIE"&&item.poster_url ? <img src={item.poster_url} alt=""/> :
+                      item?.kind==="CONCERT" ? <Music2 size={32}/> : <Ticket size={32}/>}
+                   </div>
+                   <div className="favorite-card-main">
+                     <span>{item?.kind || row.listing_kind}</span>
+                     <h2>{item?.title || "Listing no longer available"}</h2>
+                     {item ? <>
+                       <p><MapPin size={14}/>{item.place}</p>
+                       <p><CalendarDays size={14}/>{dateText(item.eventAt)}</p>
+                     </> : <p>This listing is no longer visible in the marketplace. It may have expired or been removed.</p>}
+                   </div>
+                   <div className="favorite-card-side">
+                     {item ? <><strong>{money(item.price_per_ticket)}</strong><small>per ticket</small><em className={item.status==="ACTIVE"?"available":"not-available"}>{item.status}</em></> : <em className="not-available">UNAVAILABLE</em>}
+                     <button className="favorite-remove" onClick={()=>removeFavorite(row)}><Heart size={15} fill="currentColor"/> Remove</button>
+                   </div>
+                 </article>
+               );
+             })}
+           </div>}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+
 function Dashboard({ user, onLogout }) {
   const [activeNav, setActiveNav] = useState("Home");
   const [search, setSearch] = useState("");
@@ -586,6 +687,7 @@ function Dashboard({ user, onLogout }) {
     </main>
   );
   if (activeNav === "Find Tickets") return <FindTicketsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
+  if (activeNav === "Favorites") return <FavoritesPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Create Listing") return <CreateListingPage activeSub="TRAIN" onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   const navItems = [

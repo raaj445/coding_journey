@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
+import ConcertTicketListingPage from "./ConcertTicketListingPage";
 
 const eventCards = [
   { title: "Concerts", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=700&q=85", icon: Music2 },
@@ -372,9 +373,10 @@ function Dashboard({ user, onLogout }) {
   const firstName = name.split(" ")[0];
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
   if (activeNav === "Movie Ticket") return <MovieTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} states={states} citiesByState={citiesByState} />;
+  if (activeNav === "Concert Ticket") return <ConcertTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} onMovie={() => setActiveNav("Movie Ticket")} states={states} citiesByState={citiesByState} />;
   if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} />;
   const navItems = [
-    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Movie Ticket", icon: Ticket }, { label: "Find People", icon: Users },
+    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Movie Ticket", icon: Ticket }, { label: "Concert Ticket", icon: Music2 }, { label: "Find People", icon: Users },
     { label: "Communities", icon: HeartHandshake }, { label: "Messages", icon: MessageCircle }, { label: "My Listings", icon: Ticket },
     { label: "Bookmarks", icon: Bookmark }, { label: "Profile", icon: UserRound }, { label: "Settings", icon: Settings },
   ];

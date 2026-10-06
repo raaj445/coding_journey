@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "./lib/supabase";
 import { ArrowRight, Bell, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";
+
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || "";
 
 const cinemaHallsByCity = {
   Kolkata: ["INOX: South City, Kolkata","INOX: Quest Mall","PVR: Diamond Plaza, Jessore Kolkata","Cinepolis: Lake Mall, Kolkata","PVR: Mani Square Mall, Kolkata","Cinepolis: Acropolis Mall, Kolkata","INOX: City Centre II, Rajarhat","INOX: City Centre, Salt Lake","PVR: Avani, Kolkata","Miraj Cinemas: The Terminus, New Town","Other"],
@@ -66,12 +67,52 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
   async function searchMovies(mode = "search", query = "") {
     setMovieSearching(true);
     setMovieSearchError("");
+    if (!TMDB_API_KEY) {
+      setMovieResults([]);
+      setMovieSearchError("Movie search is not configured yet.");
+      setMovieSearching(false);
+      return;
+    }
     try {
-      const { data, error } = await supabase.functions.invoke("search-movies", {
-        body: { mode, query }
+      const endpoint = mode === "recent"
+        ? "https://api.themoviedb.org/3/discover/movie"
+        : "https://api.themoviedb.org/3/search/movie";
+      const params = new URLSearchParams({
+        api_key: TMDB_API_KEY,
+        language: "en-IN",
+        include_adult: "false",
+        page: "1",
+        region: "IN"
       });
-      if (error) throw error;
-      setMovieResults(data?.results || []);
+      if (mode === "recent") {
+        const today = new Date();
+        const start = new Date(today);
+        start.setDate(today.getDate() - 45);
+        params.set("primary_release_date.gte", start.toISOString().slice(0, 10));
+        params.set("primary_release_date.lte", today.toISOString().slice(0, 10));
+        params.set("sort_by", "primary_release_date.desc");
+        params.set("with_release_type", "2|3");
+      } else {
+        if (!query) {
+          setMovieResults([]);
+          setMovieSearching(false);
+          return;
+        }
+        params.set("query", query);
+      }
+      const response = await fetch(endpoint + "?" + params.toString());
+      if (!response.ok) throw new Error("TMDB request failed");
+      const data = await response.json();
+      setMovieResults((data.results || []).slice(0, 8).map(movie => ({
+        id: movie.id,
+        title: movie.title || movie.original_title || "Untitled",
+        originalTitle: movie.original_title || movie.title || "",
+        releaseDate: movie.release_date || "",
+        year: movie.release_date ? movie.release_date.slice(0, 4) : "",
+        language: movie.original_language || "",
+        posterPath: movie.poster_path || null,
+        posterUrl: movie.poster_path ? "https://image.tmdb.org/t/p/w342" + movie.poster_path : null
+      })));
     } catch (error) {
       console.error(error);
       setMovieResults([]);

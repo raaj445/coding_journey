@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
+import MovieTicketListingPage from "./MovieTicketListingPage";
 
 const eventCards = [
   { title: "Concerts", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=700&q=85", icon: Music2 },
@@ -245,7 +246,7 @@ function CreateListingPage({ onBack }) {
         <aside className="listing-left-nav">
           <button className="listing-nav-item muted" onClick={onBack}><Home size={18}/><span>Roommate / Flatmate<small>Coming Soon</small></span></button>
           <button className="listing-nav-item active"><Ticket size={18}/><span>Train Ticket</span></button>
-          <button className="listing-nav-item"><Ticket size={18}/><span>Movie Ticket</span></button>
+          <button className="listing-nav-item" onClick={onMovie}><Ticket size={18}/><span>Movie Ticket</span></button>
           <button className="listing-nav-item"><Music2 size={18}/><span>Concert Ticket</span></button>
         </aside>
 
@@ -357,9 +358,10 @@ function Dashboard({ user, onLogout }) {
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Amartya";
   const firstName = name.split(" ")[0];
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
-  if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} />;
+  if (activeNav === "Movie Ticket") return <MovieTicketListingPage onBack={() => setActiveNav("Home")} onTrain={() => setActiveNav("Create Listing")} states={states} citiesByState={citiesByState} />;
+  if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} />;
   const navItems = [
-    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Find People", icon: Users },
+    { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Movie Ticket", icon: Ticket }, { label: "Find People", icon: Users },
     { label: "Communities", icon: HeartHandshake }, { label: "Messages", icon: MessageCircle }, { label: "My Listings", icon: Ticket },
     { label: "Bookmarks", icon: Bookmark }, { label: "Profile", icon: UserRound }, { label: "Settings", icon: Settings },
   ];

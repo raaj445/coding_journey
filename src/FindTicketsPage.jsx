@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Bell, CalendarDays, ChevronDown, Clock3, Heart, Home, MapPin, MessageCircle, Music2, Search, SlidersHorizontal, Ticket, UserRound, Users, X, Tag } from "lucide-react";
 import { supabase } from "./lib/supabase";
-import { TRAIN_ICON_SRC } from "./trainIcon";
+const TRAIN_ICON_SRC = "/train-icon.png";
 
 const money = value => value == null ? "—" : "₹" + Number(value).toLocaleString("en-IN");
 const dateText = value => value ? new Date(value + (value.length === 10 ? "T00:00:00" : "")).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—";

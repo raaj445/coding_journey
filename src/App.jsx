@@ -3,6 +3,7 @@ import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, Lo
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
 import ConcertTicketListingPage from "./ConcertTicketListingPage";
+import FindTicketsPage from "./FindTicketsPage";
 
 const eventCards = [
   { title: "Concerts", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=700&q=85", icon: Music2 },
@@ -393,6 +394,7 @@ function Dashboard({ user, onLogout }) {
       </section>
     </main>
   );
+  if (activeNav === "Find Tickets") return <FindTicketsPage onBack={() => setActiveNav("Home")} />;
   if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} />;
   const navItems = [
     { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Find People", icon: Users },
@@ -450,7 +452,7 @@ function Dashboard({ user, onLogout }) {
           <section className="dashboard-section">
             <div className="section-heading"><h2>Quick Actions</h2></div>
             <div className="quick-grid">
-              <button className="quick-card lavender" onClick={() => setActiveNav("Home")}><span><Ticket size={23} /></span><div><b>Find Tickets</b><small>Concerts, Movies, Trains</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card lavender" onClick={() => setActiveNav("Find Tickets")}><span><Ticket size={23} /></span><div><b>Find Tickets</b><small>Concerts, Movies, Trains</small></div><ArrowRight size={18} /></button>
               <button className="quick-card pink" onClick={() => setActiveNav("Find People")}><span><Users size={23} /></span><div><b>Find People</b><small>Roommates, Friends</small></div><ArrowRight size={18} /></button>
               <button className="quick-card green"><span><Users size={23} /></span><div><b>Explore Communities</b><small>Join groups & interests</small></div><ArrowRight size={18} /></button>
               <button className="quick-card yellow" onClick={() => setActiveNav("Create Listing")}><span><Plus size={23} /></span><div><b>Create a Listing</b><small>Sell or find what you need</small></div><ArrowRight size={18} /></button>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Bell, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import UniversalSidebar from "./UniversalSidebar";
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || "";
 
@@ -33,7 +34,7 @@ const cinemaHallsByCity = {
   Thane: ["Cinepolis: Viviana Mall","PVR: Korum Mall","Other"]
 };
 
-export default function MovieTicketListingPage({ onBack, onTrain, states, citiesByState }) {
+export default function MovieTicketListingPage({ onBack, onTrain, states, citiesByState, onNavigate, onLogout }) {
   const [movieName, setMovieName] = useState("Pushpa 2: The Rule");
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [movieQuery, setMovieQuery] = useState("");
@@ -258,12 +259,7 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
         <span className="listing-user-avatar">A</span>
       </header>
       <div className="listing-layout">
-        <aside className="listing-left-nav">
-          <button className="listing-nav-item muted" onClick={onBack}><Home size={18}/><span>Roommate / Flatmate<small>Coming Soon</small></span></button>
-          <button className="listing-nav-item" onClick={onTrain}><Ticket size={18}/><span>Train Ticket</span></button>
-          <button className="listing-nav-item active"><Ticket size={18}/><span>Movie Ticket</span></button>
-          <button className="listing-nav-item"><Music2 size={18}/><span>Concert Ticket</span></button>
-        </aside>
+        <UniversalSidebar activeNav="Create Listing" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
 
         <section className="listing-main-column">
           <div className="listing-page-title"><h1>Create Movie Ticket Listing</h1><p>List your movie tickets and find genuine buyers.</p></div>

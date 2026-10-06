@@ -3,7 +3,7 @@ import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, Lo
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
 import ConcertTicketListingPage from "./ConcertTicketListingPage";
-import { TRAIN_ICON_SRC } from "./trainIcon";
+import TrainArtwork from "./TrainArtwork";
 import FindTicketsPage from "./FindTicketsPage";
 
 const eventCards = [
@@ -313,7 +313,7 @@ function CreateListingPage({ onBack, onMovie, onConcert }) {
         <aside className="listing-right-column">
           <div className="preview-title"><span className="preview-brand-icon">C</span><div><b>Listing Preview</b><small>This is how your listing will appear to others</small></div></div>
           <div className="modern-preview-card">
-            <div className="preview-image-wrap"><img src={TRAIN_ICON_SRC} alt="Train" /><span className="active-listing">● Active Listing</span><button>Edit</button></div>
+            <div className="preview-image-wrap"><TrainArtwork className="preview-train-artwork" /><span className="active-listing">● Active Listing</span><button>Edit</button></div>
             <div className="preview-route-row"><div><h3>{fromStation} → {toStation}</h3><p>◷ &nbsp;{journeyDate || "Journey date"} &nbsp;•&nbsp; Departure {displayDeparture}{railValidation?.valid && railValidation.arrivalTime ? ` • Arrival ${railValidation.arrivalTime}` : ""}</p><p>▣ &nbsp;{selectedTrainNumber || "Train"} • {displayTrainName}</p></div><strong>₹ {Number(price||0).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
             <div className="preview-pills"><span>{ticketCount} Tickets</span>{bargain&&<span className="bargain-pill">Bargain Available</span>}</div>
             <div className="preview-separator"/>

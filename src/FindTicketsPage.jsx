@@ -138,19 +138,7 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
     return data.sort((a,b)=>sort==="PRICE" ? Number(a.price||0)-Number(b.price||0) : new Date(a.eventAt)-new Date(b.eventAt));
   },[enrichedListings,category,search,state,city,date,maxPrice,sort]);
 
-  const filtered=useMemo(()=>{
-    let data=listings.filter(x=>{
-      if(category!=="ALL"&&x.kind!==category)return false;
-      const hay=[x.title,x.place,x.artist_name,x.train_number,x.city,x.state,x.venue,x.cinema_hall].filter(Boolean).join(" ").toLowerCase();
-      if(search.trim()&&!hay.includes(search.trim().toLowerCase()))return false;
-      if(state&&x.state!==state)return false;
-      if(city&&x.city!==city)return false;
-      if(date&&x.eventAt?.slice(0,10)!==date)return false;
-      if(maxPrice&&Number(x.price||0)>Number(maxPrice))return false;
-      return true;
-    });
-    return data.sort((a,b)=>sort==="PRICE" ? Number(a.price||0)-Number(b.price||0) : new Date(a.eventAt)-new Date(b.eventAt));
-  },[listings,category,search,state,city,date,maxPrice,sort]);
+
 
   useEffect(()=>{if(selected && !filtered.some(x=>x.id===selected.id))setSelected(null)},[filtered,selected]);
 

@@ -235,32 +235,32 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 @media(max-width:600px){.coming-soon-shell{padding:20px}.coming-soon-back{left:16px;top:16px}.coming-soon-card{padding:32px 20px}}
 
 /* Concert listing readability + single-line expiry strip */
-.listing-shell .listing-page-heading h1{font-size:28px}
-.listing-shell .listing-page-heading p{font-size:13px}
-.listing-shell .listing-card-heading h2{font-size:18px}
-.listing-shell .listing-card-heading p{font-size:11px}
-.listing-shell .modern-field>span{font-size:13px}
-.listing-shell .modern-field>input,
-.listing-shell .modern-field>select,
+.listing-app-shell .listing-page-heading h1{font-size:28px}
+.listing-app-shell .listing-page-heading p{font-size:13px}
+.listing-app-shell .listing-card-heading h2{font-size:18px}
+.listing-app-shell .listing-card-heading p{font-size:11px}
+.listing-app-shell .modern-field>span{font-size:13px}
+.listing-app-shell .modern-field>input,
+.listing-app-shell .modern-field>select,
 .listing-shell .modern-input,
 .listing-shell .modern-input input{font-size:14px}
-.listing-shell .expiry-strip{position:static;left:auto;right:auto;bottom:auto;width:100%;box-sizing:border-box;min-height:46px;margin-top:14px;padding:0 14px;white-space:nowrap}
-.listing-shell .expiry-strip b{display:inline;font-size:12px}
-.listing-shell .expiry-strip small{display:inline;margin:0 0 0 10px;font-size:11px}
-.listing-shell .expiry-strip>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.listing-shell .modern-ticket-row .modern-field>span{font-size:11px}
-.listing-shell .modern-ticket-row .modern-field>select,
-.listing-shell .modern-ticket-row .modern-field>input{font-size:14px}
-.listing-shell .modern-ticket-number b{font-size:11px}
-.listing-shell .ticket-counter>b{font-size:11px}
-.listing-shell .ticket-counter strong{font-size:13px}
-.listing-shell .modern-price-choice b{font-size:14px}
-.listing-shell .modern-price-choice small{font-size:11px}
-.listing-shell .preview-route-row h3{font-size:17px}
-.listing-shell .preview-route-row p{font-size:11px}
-.listing-shell .preview-pills span{font-size:11px}
+.listing-app-shell .expiry-strip{position:static;left:auto;right:auto;bottom:auto;width:100%;box-sizing:border-box;min-height:46px;margin-top:14px;padding:0 14px;white-space:nowrap}
+.listing-app-shell .expiry-strip b{display:inline;font-size:12px}
+.listing-app-shell .expiry-strip small{display:inline;margin:0 0 0 10px;font-size:11px}
+.listing-app-shell .expiry-strip>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.listing-app-shell .modern-ticket-row .modern-field>span{font-size:11px}
+.listing-app-shell .modern-ticket-row .modern-field>select,
+.listing-app-shell .modern-ticket-row .modern-field>input{font-size:14px}
+.listing-app-shell .modern-ticket-number b{font-size:11px}
+.listing-app-shell .ticket-counter>b{font-size:11px}
+.listing-app-shell .ticket-counter strong{font-size:13px}
+.listing-app-shell .modern-price-choice b{font-size:14px}
+.listing-app-shell .modern-price-choice small{font-size:11px}
+.listing-app-shell .preview-route-row h3{font-size:17px}
+.listing-app-shell .preview-route-row p{font-size:11px}
+.listing-app-shell .preview-pills span{font-size:11px}
 @media(max-width:900px){
-  .listing-shell .expiry-strip{white-space:normal;padding:10px 14px}
-  .listing-shell .expiry-strip b,.listing-shell .expiry-strip small{display:block;margin:0}
-  .listing-shell .expiry-strip small{margin-top:4px}
+  .listing-app-shell .expiry-strip{white-space:normal;padding:10px 14px}
+  .listing-app-shell .expiry-strip b,.listing-app-shell .expiry-strip small{display:block;margin:0}
+  .listing-app-shell .expiry-strip small{margin-top:4px}
 }

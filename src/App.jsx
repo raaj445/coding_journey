@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight, CalendarDays } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
 import ConcertTicketListingPage from "./ConcertTicketListingPage";
@@ -623,6 +623,7 @@ function Dashboard({ user, onLogout }) {
   const [search, setSearch] = useState("");
   const [myListings, setMyListings] = useState([]);
   const [listingsLoading, setListingsLoading] = useState(true);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -666,6 +667,21 @@ function Dashboard({ user, onLogout }) {
     loadMyListings();
     return () => { mounted = false; };
   }, [user?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadFavoriteCount() {
+      if (!user?.id) { setFavoriteCount(0); return; }
+      const { count, error } = await supabase
+        .from("listing_favorites")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (mounted) setFavoriteCount(error ? 0 : (count || 0));
+    }
+    loadFavoriteCount();
+    return () => { mounted = false; };
+  }, [user?.id]);
+
   const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Amartya";
   const firstName = name.split(" ")[0];
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
@@ -721,7 +737,7 @@ function Dashboard({ user, onLogout }) {
         <div className="dashboard-search top-search"><Search size={18} /><input placeholder="Search tickets, people, events, locations..." value={search} onChange={e => setSearch(e.target.value)} /></div>
         <div className="top-actions">
           <button className="post-button" onClick={() => setActiveNav("Create Listing")}><Plus size={17} /> Post</button>
-          <button className="icon-button" aria-label="Messages"><MessageCircle size={20} /></button>
+          <button className="icon-button" aria-label="Messages"><MessageCircle size={20} /></button><button className="icon-button dashboard-favorite-button" aria-label="Favorites" onClick={() => setActiveNav("Favorites")}><Heart size={20} fill={favoriteCount ? "currentColor" : "none"} /><i>{favoriteCount > 99 ? "99+" : favoriteCount}</i></button>
           <button className="icon-button notification-button" aria-label="Notifications"><Bell size={20} /><i /></button>
           <button className="profile-mini"><span className="avatar">{avatar ? <img src={avatar} alt="" /> : <UserRound size={18} />}</span><b>{firstName}</b><ChevronDown size={16} /></button>
           <button className="mobile-menu" aria-label="Menu"><Menu size={21} /></button>
@@ -797,7 +813,7 @@ function Dashboard({ user, onLogout }) {
         <aside className="dashboard-right">
           <section className="profile-card">
             <div className="profile-card-head"><span className="large-avatar">{avatar ? <img src={avatar} alt="" /> : <UserRound size={25} />}</span><div><b>{name}</b><small>@{firstName.toLowerCase()}</small></div><button>Edit Profile</button></div>
-            <div className="profile-stats"><div><b>{myListings.length}</b><small>Listings</small></div><div><b>8</b><small>Bookmarks</small></div><div><b>4</b><small>Communities</small></div></div>
+            <div className="profile-stats"><div><b>{myListings.length}</b><small>Listings</small></div><div><b>{favoriteCount}</b><small>Favorites</small></div><div><b>4</b><small>Communities</small></div></div>
           </section>
           <section className="side-card"><div className="section-heading"><h2>Suggested People</h2><button>View all</button></div>{suggested.map((person, index) => (
             <div className="suggested-row" key={person.name}><span className={`person-avatar small avatar-${index + 2}`}><UserRound size={16} /></span><div><b>{person.name}</b><small>{person.meta}</small></div><button>Connect</button></div>

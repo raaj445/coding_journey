@@ -53,7 +53,7 @@ const citiesByState = {
 };
 
 
-function StationPicker({ label, value, onChange, stations, required = true }) {
+function StationPicker({ label, value, onChange, stations, required = true, clearOnFocus = false }) {
   const [open, setOpen] = useState(false);
   const query = value.trim().toLowerCase();
   const suggestions = query
@@ -67,7 +67,7 @@ function StationPicker({ label, value, onChange, stations, required = true }) {
         <div className="modern-input">
           <input
             value={value}
-            onFocus={() => setOpen(true)}
+            onFocus={() => { if (clearOnFocus) onChange(""); setOpen(true); }}
             onChange={e => { onChange(e.target.value); setOpen(true); }}
             placeholder="Search station name or code"
             autoComplete="off"
@@ -110,7 +110,7 @@ function CreateListingPage({ onBack }) {
       .catch(() => setTrains([]));
   }, []);
   useEffect(() => {
-    fetch("https://raw.githubusercontent.com/prasenjit-27/Indian-Railway-Data/main/stations.json")
+    fetch("/rail/stations.json")
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Station data unavailable")))
       .then(data => setStations(Array.isArray(data) ? data : []))
       .catch(() => setStations([]));
@@ -160,8 +160,18 @@ function CreateListingPage({ onBack }) {
       const { data, error } = await supabase.functions.invoke("validate-rail-journey", {
         body: { trainNumber, fromCode: selectedFromCode, fromName: fromStation, toCode: selectedToCode, toName: toStation, journeyDate }
       });
-      if (error && !data) throw error;
-      setRailValidation(data || { valid: false, message: error?.message || "Railway verification failed." });
+      if (error) {
+        let functionPayload = null;
+        try {
+          if (error.context?.json) functionPayload = await error.context.json();
+        } catch {}
+        if (functionPayload?.message) {
+          setRailValidation(functionPayload);
+          return;
+        }
+        throw error;
+      }
+      setRailValidation(data || { valid: false, message: "Railway verification failed." });
     } catch {
       setRailValidation({ valid: false, message: "Railway verification is temporarily unavailable. Please try again." });
     } finally {
@@ -248,8 +258,8 @@ function CreateListingPage({ onBack }) {
           <section className="listing-modern-card">
             <div className="modern-section-head"><span>1</span><div><h2>Journey Details</h2><p>Enter your train journey information</p></div></div>
             <div className="journey-grid">
-              <StationPicker label="From Station" value={fromStation} onChange={setFromStation} stations={stations} />
-              <StationPicker label="To Station" value={toStation} onChange={setToStation} stations={stations} />
+              <StationPicker label="From Station" value={fromStation} onChange={setFromStation} stations={stations} clearOnFocus />
+              <StationPicker label="To Station" value={toStation} onChange={setToStation} stations={stations} clearOnFocus />
               <label className="modern-field"><span>Journey Date <i>*</i></span><div className="modern-input"><input type="date" value={journeyDate} onChange={e => { setJourneyDate(e.target.value); setRailValidation(null); }} /><Ticket size={16}/></div></label>
               <label className="modern-field train-search-field train-picker-field"><span>Train Number <i>*</i></span><div className="modern-input"><Search size={16}/><input value={trainQuery} onFocus={() => setTrainOpen(true)} onChange={e => { setTrainQuery(e.target.value); setTrainOpen(true); setRailValidation(null); }} placeholder="Search train number or name" autoComplete="off" /></div>
                 {trainOpen && <div className="train-suggestions">{trainSuggestions.length ? trainSuggestions.map(train => <button type="button" key={train.number} onMouseDown={() => { setTrainQuery(`${train.number} - ${train.name}`); setTrainOpen(false); setRailValidation(null); }}><b>{train.number}</b><span>{train.name}</span></button>) : <div className="station-empty">Train data is syncing. Try the 5-digit train number.</div>}</div>}

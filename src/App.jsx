@@ -3,6 +3,7 @@ import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, Lo
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
 import ConcertTicketListingPage from "./ConcertTicketListingPage";
+import { TRAIN_ICON_SRC } from "./trainIcon";
 import FindTicketsPage from "./FindTicketsPage";
 
 const eventCards = [
@@ -312,7 +313,7 @@ function CreateListingPage({ onBack, onMovie, onConcert }) {
         <aside className="listing-right-column">
           <div className="preview-title"><span className="preview-brand-icon">C</span><div><b>Listing Preview</b><small>This is how your listing will appear to others</small></div></div>
           <div className="modern-preview-card">
-            <div className="preview-image-wrap"><img src="https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=1000&q=85" alt="Train" /><span className="active-listing">● Active Listing</span><button>Edit</button></div>
+            <div className="preview-image-wrap"><img src={TRAIN_ICON_SRC} alt="Train" /><span className="active-listing">● Active Listing</span><button>Edit</button></div>
             <div className="preview-route-row"><div><h3>{fromStation} → {toStation}</h3><p>◷ &nbsp;{journeyDate || "Journey date"} &nbsp;•&nbsp; Departure {displayDeparture}{railValidation?.valid && railValidation.arrivalTime ? ` • Arrival ${railValidation.arrivalTime}` : ""}</p><p>▣ &nbsp;{selectedTrainNumber || "Train"} • {displayTrainName}</p></div><strong>₹ {Number(price||0).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
             <div className="preview-pills"><span>{ticketCount} Tickets</span>{bargain&&<span className="bargain-pill">Bargain Available</span>}</div>
             <div className="preview-separator"/>
@@ -325,6 +326,80 @@ function CreateListingPage({ onBack, onMovie, onConcert }) {
           </div>
         </aside>
       </div>
+    </main>
+  );
+}
+
+function MyListingsPage({ user, onBack }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      if (!user?.id) { setLoading(false); return; }
+      setLoading(true);
+      const [tr, mv, co] = await Promise.all([
+        supabase.from("listings").select("id,train_number,train_name,from_name,to_name,journey_date,departure_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50),
+        supabase.from("movie_listings").select("id,movie_name,poster_url,city,cinema_hall,show_date,show_time,show_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50),
+        supabase.from("concert_listings").select("id,event_name,artist_name,city,venue,event_date,event_time,event_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50)
+      ]);
+      if (!mounted) return;
+      const errors = [tr.error, mv.error, co.error].filter(Boolean);
+      if (errors.length === 3) { setError(errors[0].message); setLoading(false); return; }
+      const normalized = [
+        ...(tr.data || []).map(x => ({ ...x, kind: "TRAIN", title: x.train_name || "Train Ticket", place: x.from_name + " → " + x.to_name, eventAt: x.departure_at })),
+        ...(mv.data || []).map(x => ({ ...x, kind: "MOVIE", title: x.movie_name || "Movie Ticket", place: x.cinema_hall + " · " + x.city, eventAt: x.show_at })),
+        ...(co.data || []).map(x => ({ ...x, kind: "CONCERT", title: x.event_name || "Concert Ticket", place: x.venue + " · " + x.city, eventAt: x.event_at }))
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setItems(normalized);
+      setLoading(false);
+    }
+    load();
+    return () => { mounted = false; };
+  }, [user?.id]);
+
+  return (
+    <main className="my-listings-shell">
+      <header className="my-listings-header">
+        <div>
+          <button className="my-listings-back" onClick={onBack}>← Back to Dashboard</button>
+          <span className="my-listings-kicker">CONNECTHUB</span>
+          <h1>My Listings</h1>
+          <p>Only listings posted by you are shown here.</p>
+        </div>
+        <div className="my-listings-count">{items.length} listing{items.length === 1 ? "" : "s"}</div>
+      </header>
+      {loading ? <div className="my-listings-empty">Loading your listings...</div> :
+       error ? <div className="my-listings-empty error">{error}</div> :
+       !items.length ? <div className="my-listings-empty"><Ticket size={34}/><b>You haven't posted any listings yet.</b><span>Create a listing and it will appear here.</span></div> :
+       <div className="my-listings-list">
+         {items.map(item => (
+           <article className="my-listing-full-card" key={item.kind + "-" + item.id}>
+             <div className="my-listing-full-image">
+               {item.kind === "TRAIN" ? <img src={TRAIN_ICON_SRC} alt="Train" /> :
+                item.kind === "MOVIE" && item.poster_url ? <img src={item.poster_url} alt="" /> :
+                item.kind === "MOVIE" ? <Ticket size={34}/> : <Music2 size={34}/>}
+             </div>
+             <div className="my-listing-full-main">
+               <span className={"my-listing-kind " + item.kind.toLowerCase()}>{item.kind}</span>
+               <h2>{item.title}</h2>
+               <p><MapPin size={15}/>{item.place}</p>
+               <p><Ticket size={15}/>{item.eventAt ? new Date(item.eventAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"} · {item.ticket_count} ticket{item.ticket_count === 1 ? "" : "s"}</p>
+               {item.kind === "TRAIN" && <small>{item.train_number} · {item.from_name} → {item.to_name}</small>}
+               {item.kind === "MOVIE" && <small>{item.language || ""}{item.language && item.format ? " · " : ""}{item.format || ""}</small>}
+               {item.kind === "CONCERT" && <small>{item.artist_name || "Artist / Performer"}</small>}
+             </div>
+             <div className="my-listing-full-side">
+               <strong>₹{Number(item.price_per_ticket || 0).toLocaleString("en-IN")}</strong>
+               <span>per ticket</span>
+               <em className={item.status === "ACTIVE" ? "listing-active" : "listing-status"}>{item.status}</em>
+               {item.ready_to_bargain && <b>Bargain available</b>}
+             </div>
+           </article>
+         ))}
+       </div>}
     </main>
   );
 }
@@ -394,8 +469,9 @@ function Dashboard({ user, onLogout }) {
       </section>
     </main>
   );
-  if (activeNav === "Find Tickets") return <FindTicketsPage onBack={() => setActiveNav("Home")} />;
+  if (activeNav === "Find Tickets") return <FindTicketsPage user={user} onBack={() => setActiveNav("Home")} />;
   if (activeNav === "Create Listing") return <CreateListingPage onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} />;
+  if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} />;
   const navItems = [
     { label: "Home", icon: Home }, { label: "Find Tickets", icon: Ticket }, { label: "Create Listing", icon: Plus }, { label: "Find People", icon: Users },
     { label: "Communities", icon: HeartHandshake }, { label: "Messages", icon: MessageCircle }, { label: "My Listings", icon: Ticket },

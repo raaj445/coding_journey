@@ -34,7 +34,7 @@ const cinemaHallsByCity = {
   Thane: ["Cinepolis: Viviana Mall","PVR: Korum Mall","Other"]
 };
 
-export default function MovieTicketListingPage({ onBack, onTrain, states, citiesByState, onNavigate, onLogout }) {
+export default function MovieTicketListingPage({ onBack, onTrain, states, citiesByState, onNavigate, onLogout, activeSub = "MOVIE" }) {
   const [movieName, setMovieName] = useState("Pushpa 2: The Rule");
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [movieQuery, setMovieQuery] = useState("");
@@ -259,7 +259,7 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
         <span className="listing-user-avatar">A</span>
       </header>
       <div className="listing-layout">
-        <UniversalSidebar activeNav="Create Listing" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
+        <UniversalSidebar activeNav="Create Listing" activeSub={activeSub} onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
 
         <section className="listing-main-column">
           <div className="listing-page-title"><h1>Create Movie Ticket Listing</h1><p>List your movie tickets and find genuine buyers.</p></div>

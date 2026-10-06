@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "./lib/supabase";
 import { ArrowRight, Bell, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";
 
 const cinemaHallsByCity = {
@@ -32,6 +33,13 @@ const cinemaHallsByCity = {
 
 export default function MovieTicketListingPage({ onBack, onTrain, states, citiesByState }) {
   const [movieName, setMovieName] = useState("Pushpa 2: The Rule");
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [movieQuery, setMovieQuery] = useState("");
+  const [movieResults, setMovieResults] = useState([]);
+  const [movieSearchOpen, setMovieSearchOpen] = useState(false);
+  const [movieSearching, setMovieSearching] = useState(false);
+  const [movieSearchError, setMovieSearchError] = useState("");
+  const [movieOther, setMovieOther] = useState(false);
   const [stateName, setStateName] = useState("West Bengal");
   const [city, setCity] = useState("Kolkata");
   const [cinemaHall, setCinemaHall] = useState("INOX: South City, Kolkata");
@@ -54,6 +62,48 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
   const halls = cinemaHallsByCity[city] || ["Other"];
   const hallDisplay = cinemaHall === "Other" ? (otherHall.trim() || "Cinema Hall") : cinemaHall;
   const totalPrice = samePrice ? Number(price || 0) * ticketCount : tickets.reduce((sum, ticket) => sum + Number(ticket.price || 0), 0);
+
+  async function searchMovies(mode = "search", query = "") {
+    setMovieSearching(true);
+    setMovieSearchError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("search-movies", {
+        body: { mode, query }
+      });
+      if (error) throw error;
+      setMovieResults(data?.results || []);
+    } catch (error) {
+      console.error(error);
+      setMovieResults([]);
+      setMovieSearchError("Movie search is temporarily unavailable.");
+    } finally {
+      setMovieSearching(false);
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!movieSearchOpen || movieOther) return;
+      searchMovies(movieQuery.trim() ? "search" : "recent", movieQuery.trim());
+    }, movieQuery.trim() ? 350 : 0);
+    return () => clearTimeout(timer);
+  }, [movieQuery, movieSearchOpen, movieOther]);
+
+  function selectMovie(movie) {
+    setSelectedMovie(movie);
+    setMovieName(movie.title);
+    setMovieQuery(movie.title);
+    setMovieOther(false);
+    setMovieSearchOpen(false);
+    setMovieSearchError("");
+  }
+
+  function selectOtherMovie() {
+    setSelectedMovie(null);
+    setMovieOther(true);
+    setMovieSearchOpen(false);
+    setMovieQuery(movieName);
+  }
 
   function changeTicketCount(next) {
     const count = Math.max(1, Math.min(10, next));
@@ -112,7 +162,42 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
 
           <section className="listing-modern-card">
             <div className="modern-section-head"><span>1</span><div><h2>Movie & Theatre Details</h2><p>Enter movie, location and theatre information</p></div></div>
-            <label className="modern-field movie-name-field"><span>Movie Name <i>*</i></span><div className="modern-input"><Search size={16}/><input value={movieName} onChange={e=>setMovieName(e.target.value)} placeholder="Search movie name" /></div></label>
+            <label className="modern-field movie-name-field"><span>Movie Name <i>*</i></span>
+              <div className="movie-search-wrap">
+                <div className="modern-input">
+                  <Search size={16}/>
+                  <input
+                    value={movieQuery || movieName}
+                    onFocus={() => { setMovieSearchOpen(true); if (!movieQuery && !movieOther) searchMovies("recent", ""); }}
+                    onChange={e => {
+                      const value = e.target.value;
+                      setMovieQuery(value);
+                      setMovieName(value);
+                      setSelectedMovie(null);
+                      setMovieOther(false);
+                      setMovieSearchOpen(true);
+                    }}
+                    placeholder="Search movie name"
+                    autoComplete="off"
+                  />
+                  {movieSearching && <span className="movie-search-spinner">...</span>}
+                </div>
+                {movieSearchOpen && !movieOther && (
+                  <div className="movie-suggestions">
+                    <div className="movie-suggestions-title">{movieQuery.trim() ? "Movie Search Results" : "Recently Released Movies"}</div>
+                    {movieResults.map(movie => (
+                      <button type="button" key={movie.id} onMouseDown={e=>e.preventDefault()} onClick={()=>selectMovie(movie)}>
+                        {movie.posterUrl ? <img src={movie.posterUrl} alt="" /> : <span className="movie-suggestion-placeholder">🎬</span>}
+                        <span className="movie-suggestion-info"><b>{movie.title}</b><small>{movie.year || "Release year unavailable"}{movie.language ? " • " + movie.language.toUpperCase() : ""}</small></span>
+                      </button>
+                    ))}
+                    {!movieSearching && movieResults.length === 0 && <div className="movie-empty">{movieSearchError || "No movie found."}</div>}
+                    <button type="button" className="movie-other-option" onMouseDown={e=>e.preventDefault()} onClick={selectOtherMovie}><span>＋</span><span><b>Other</b><small>Enter movie name manually</small></span></button>
+                  </div>
+                )}
+              </div>
+              {movieOther && <small className="movie-manual-note">Manual movie name selected. No poster will be attached unless you select a movie from the search.</small>}
+            </label>
             <div className="movie-location-grid">
               <label className="modern-field"><span>State <i>*</i></span><select value={stateName} onChange={e=>resetCity(e.target.value)}><option value="">Select state</option>{states.map(state=><option key={state}>{state}</option>)}</select></label>
               <label className="modern-field"><span>City <i>*</i></span><select value={city} onChange={e=>resetHall(e.target.value)} disabled={!stateName}><option value="">Select city</option>{cities.map(item=><option key={item}>{item}</option>)}</select></label>
@@ -168,7 +253,7 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
         <aside className="listing-right-column">
           <div className="preview-title"><span className="preview-brand-icon">C</span><div><b>Listing Preview</b><small>This is how your listing will appear to others</small></div></div>
           <div className="modern-preview-card movie-preview-card">
-            <div className="movie-preview-image"><img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1000&q=85" alt="Movie theatre" /><span className="active-listing">Preview</span><button>Edit</button></div>
+            <div className="movie-preview-image">{selectedMovie?.posterUrl ? <img src={selectedMovie.posterUrl} alt={selectedMovie.title} /> : <div className="movie-preview-placeholder"><span>🎬</span><b>{movieName || "Movie"}</b><small>{movieOther ? "Custom movie" : "Select a movie to show poster"}</small></div>}<span className="active-listing">Preview</span><button>Edit</button></div>
             <div className="preview-route-row"><div><h3>{movieName || "Movie Name"}</h3><p><MapPin size={12} /> &nbsp;{hallDisplay}, {city || "City"}</p><p>▣ &nbsp;{formattedShowDate()}</p><p>◷ &nbsp;{formattedShowTime()}</p></div><strong>₹{Number(samePrice ? price : (tickets[0]?.price || 0)).toLocaleString("en-IN")}<small>per ticket</small></strong></div>
             <div className="preview-pills"><span>{language}</span><span>{format}</span>{bargain&&<span className="bargain-pill">Bargain Available</span>}</div>
             <div className="preview-separator"/>

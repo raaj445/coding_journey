@@ -31,7 +31,7 @@ export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, sta
     setIndividualPrices(prev => Array.from({ length: count }, (_, i) => prev[i] || ""));
   }
 
-  function postConcertListing() {
+  async function postConcertListing() {
     if (!eventName.trim() || !stateName || !city || !venue.trim() || !eventDate || !eventTime || !ticketCount) {
       alert("Please complete all required event details.");
       return;
@@ -44,7 +44,43 @@ export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, sta
       alert("Please enter a valid price for every ticket.");
       return;
     }
-    alert("Concert listing backend will be connected next.");
+
+    setPosting(true);
+    try {
+      const tickets = Array.from({ length: ticketCount }, (_, index) => ({
+        price: Number(samePrice ? price : individualPrices[index])
+      }));
+      const { data, error } = await supabase.functions.invoke("create-concert-listing", {
+        body: {
+          eventName: eventName.trim(),
+          artistName: artistName.trim(),
+          state: stateName,
+          city,
+          venue: venue.trim(),
+          eventDate,
+          eventTime,
+          ticketType,
+          seatType,
+          priceMode: samePrice ? "SAME" : "INDIVIDUAL",
+          pricePerTicket: samePrice ? Number(price) : null,
+          readyToBargain: bargain,
+          description,
+          tickets
+        }
+      });
+      if (error) {
+        let payload = null;
+        try { if (error.context?.json) payload = await error.context.json(); } catch {}
+        throw new Error(payload?.message || error.message || "Concert listing could not be created.");
+      }
+      if (!data?.ok) throw new Error(data?.message || "Concert listing could not be created.");
+      alert("Concert listing posted successfully!");
+      onBack();
+    } catch (error) {
+      alert(error?.message || "Concert listing could not be posted. Please try again.");
+    } finally {
+      setPosting(false);
+    }
   }
 
   return (
@@ -116,7 +152,7 @@ export default function ConcertTicketListingPage({ onBack, onTrain, onMovie, sta
             <label className="modern-field"><span>Description</span><textarea maxLength={500} rows={4} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Mention entry rules, transfer details, or anything buyers should know..."/></label>
           </section>
 
-          <div className="listing-bottom-actions"><button className="secondary-action" onClick={onBack}>Cancel</button><button className="modern-primary" onClick={postConcertListing} disabled={posting}>Post Listing <ArrowRight size={15}/></button></div>
+          <div className="listing-bottom-actions"><button className="secondary-action" onClick={onBack}>Cancel</button><button className="modern-primary" onClick={postConcertListing} disabled={posting}>{posting ? "Posting..." : <>Post Listing <ArrowRight size={15}/></>}</button></div>
         </section>
 
         <aside className="listing-preview">

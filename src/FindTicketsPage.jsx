@@ -27,7 +27,7 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
     async function load(){
       setLoading(true); setError("");
       const [tr,mv,co]=await Promise.all([
-        supabase.from("listings").select("id,seller_id,train_number,train_name,from_name,to_name,journey_date,departure_at,status,ticket_count,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").neq("seller_id", user?.id || "").gt("departure_at",new Date().toISOString()).order("departure_at",{ascending:true}).limit(60),
+        supabase.from("listings").select("id,seller_id,train_number,train_name,from_code,from_name,to_code,to_name,journey_date,departure_at,status,ticket_count,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").neq("seller_id", user?.id || "").gt("departure_at",new Date().toISOString()).order("departure_at",{ascending:true}).limit(60),
         supabase.from("movie_listings").select("id,seller_id,movie_name,poster_url,state,city,cinema_hall,show_date,show_time,show_at,language,format,status,ticket_count,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").neq("seller_id", user?.id || "").gt("show_at",new Date().toISOString()).order("show_at",{ascending:true}).limit(60),
         supabase.from("concert_listings").select("id,seller_id,event_name,artist_name,state,city,venue,event_date,event_time,event_at,status,ticket_count,ticket_type,seat_type,price_mode,price_per_ticket,ready_to_bargain,description,created_at").eq("status","ACTIVE").neq("seller_id", user?.id || "").gt("event_at",new Date().toISOString()).order("event_at",{ascending:true}).limit(60)
       ]);
@@ -105,7 +105,9 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
     };
   }),[listings,stationLocations,cityStateMap]);
 
+  const fallbackStates=["Andaman and Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Delhi","Jammu and Kashmir","Ladakh","Puducherry","Chandigarh"];
   const states=[...new Set([
+    ...fallbackStates,
     ...Object.keys(stateCities),
     ...enrichedListings.flatMap(x=>x.locationStates||[])
   ])].sort();

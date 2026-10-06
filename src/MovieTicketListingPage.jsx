@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Bell, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";
+import { ArrowRight, Bell, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";\nimport { supabase } from "./lib/supabase";
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || "";
 
@@ -57,7 +57,7 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
   const [samePrice, setSamePrice] = useState(true);
   const [price, setPrice] = useState("800");
   const [bargain, setBargain] = useState(true);
-  const [description, setDescription] = useState("2 premium tickets for Pushpa 2 at INOX South City. Good seats. Genuine buyers only.");
+  const [description, setDescription] = useState("2 premium tickets for Pushpa 2 at INOX South City. Good seats. Genuine buyers only.");\n  const [posting, setPosting] = useState(false);
 
   const cities = citiesByState[stateName] || [];
   const halls = cinemaHallsByCity[city] || ["Other"];
@@ -176,8 +176,73 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
     if (!showTime) return "Show time";
     return new Date("1970-01-01T" + showTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   }
-  function postMovieListing() {
-    alert("Movie listing UI is ready. Movie listing backend will be connected next.");
+  async function postMovieListing() {
+    if (!movieName.trim() || !stateName || !city || !hallDisplay || !showDate || !showTime || !language || !format) {
+      alert("Please complete all required movie listing details.");
+      return;
+    }
+    if (cinemaHall === "Other" && !otherHall.trim()) {
+      alert("Please enter the cinema hall name.");
+      return;
+    }
+    if (!tickets.length || tickets.some(ticket => !ticket.ticketType || !ticket.seatType || Number(ticket.price || 0) <= 0)) {
+      alert("Please enter valid details and price for every ticket.");
+      return;
+    }
+    if (samePrice && Number(price || 0) <= 0) {
+      alert("Please enter a valid price per ticket.");
+      return;
+    }
+    if (!supabase) {
+      alert("Supabase is not connected. Please check your environment variables.");
+      return;
+    }
+
+    setPosting(true);
+    try {
+      const payloadTickets = tickets.map(ticket => ({
+        ticketType: ticket.ticketType,
+        seatType: ticket.seatType,
+        price: Number(samePrice ? price : ticket.price)
+      }));
+
+      const { data, error } = await supabase.functions.invoke("create-movie-listing", {
+        body: {
+          movieTmdbId: selectedMovie?.id ?? null,
+          movieName: movieName.trim(),
+          posterPath: selectedMovie?.posterPath ?? null,
+          posterUrl: selectedMovie?.posterUrl ?? null,
+          state: stateName,
+          city,
+          cinemaHall: hallDisplay,
+          showDate,
+          showTime,
+          language,
+          format,
+          priceMode: samePrice ? "SAME" : "INDIVIDUAL",
+          pricePerTicket: samePrice ? Number(price) : null,
+          readyToBargain: bargain,
+          description,
+          tickets: payloadTickets
+        }
+      });
+
+      if (error) {
+        let functionPayload = null;
+        try {
+          if (error.context?.json) functionPayload = await error.context.json();
+        } catch {}
+        throw new Error(functionPayload?.message || error.message || "Listing could not be created.");
+      }
+      if (!data?.ok) throw new Error(data?.message || "Movie listing could not be created.");
+
+      alert("Movie listing posted successfully!");
+      onBack();
+    } catch (error) {
+      alert(error?.message || "Movie listing could not be posted. Please try again.");
+    } finally {
+      setPosting(false);
+    }
   }
 
   return (
@@ -287,7 +352,7 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
           <section className="listing-modern-card additional-card">
             <div className="modern-section-head"><span>5</span><div><h2>Additional Information <em>(Optional)</em></h2><p>Add any extra details for buyers</p></div><small className="char-count">{description.length}/500</small></div>
             <label className="modern-field"><span>Description</span><textarea value={description} onChange={e=>setDescription(e.target.value)} maxLength={500}/></label>
-            <div className="modern-actions"><button onClick={onBack}>Cancel</button><button className="modern-primary" onClick={postMovieListing}>Post Listing <ArrowRight size={15}/></button></div>
+            <div className="modern-actions"><button onClick={onBack}>Cancel</button><button className="modern-primary" onClick={postMovieListing} disabled={posting}>{posting ? "Posting..." : <>Post Listing <ArrowRight size={15}/></>}</button></div>
           </section>
         </section>
 
@@ -303,7 +368,7 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
             <div className="preview-separator"/>
             <div className="about-listing"><h4>▣ &nbsp; About this listing</h4><p>{ticketCount} ticket{ticketCount===1?"":"s"} for {movieName || "this movie"} at {hallDisplay}. {language} {format}. Genuine buyers only.</p></div>
             <div className="preview-expiry"><b>◷ &nbsp; This listing will automatically expire at show time</b><small>{formattedShowDate()}, {formattedShowTime()}<br/>The listing will stop appearing after the show starts.</small></div>
-            <button className="preview-post-button" onClick={postMovieListing}>Post Listing</button>
+            <button className="preview-post-button" onClick={postMovieListing} disabled={posting}>{posting ? "Posting..." : "Post Listing"}</button>
           </div>
         </aside>
       </div>

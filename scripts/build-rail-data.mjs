@@ -64,3 +64,5 @@ for (const [prefix, data] of chunks) {
 }
 
 console.log(`Generated ${index.length} trains in ${chunks.size} route chunks.`);
+
+// Railway data sync pipeline.

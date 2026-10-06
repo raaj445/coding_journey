@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Bell, CalendarDays, ChevronDown, Clock3, Heart, Home, MapPin, MessageCircle, Music2, Search, SlidersHorizontal, Ticket, UserRound, Users, X, Tag } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import TrainArtwork from "./TrainArtwork";
+import UniversalSidebar from "./UniversalSidebar";
 
 const money = value => value == null ? "—" : "₹" + Number(value).toLocaleString("en-IN");
 const dateText = value => value ? new Date(value + (value.length === 10 ? "T00:00:00" : "")).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—";
 
-export default function FindTicketsPage({ user, onBack }) {
+export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) {
   const [category,setCategory]=useState("ALL");
   const [search,setSearch]=useState("");
   const [state,setState]=useState("");
@@ -71,16 +72,7 @@ export default function FindTicketsPage({ user, onBack }) {
       </header>
 
       <div className="marketplace-body">
-        <aside className="marketplace-sidebar">
-          <button className="marketplace-side-item" onClick={onBack}><Home size={18}/> Home</button>
-          <button className="marketplace-side-item active"><Ticket size={18}/> Find Tickets</button>
-          <button className="marketplace-side-item" onClick={onBack}><span className="plus-mini">+</span> Create Listing</button>
-          <button className="marketplace-side-item"><Users size={18}/> Find People</button>
-          <button className="marketplace-side-item"><Heart size={18}/> Communities</button>
-          <button className="marketplace-side-item"><MessageCircle size={18}/> Messages</button>
-          <button className="marketplace-side-item"><Ticket size={18}/> My Listings</button>
-          <button className="marketplace-side-item"><Heart size={18}/> Bookmarks</button>
-        </aside>
+        <UniversalSidebar activeNav="Find Tickets" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
 
         <section className="marketplace-content">
           <div className="marketplace-tabs">

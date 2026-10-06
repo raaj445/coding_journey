@@ -341,14 +341,27 @@ function Dashboard({ user, onLogout }) {
         return;
       }
       setListingsLoading(true);
-      const { data, error } = await supabase
-        .from("listings")
-        .select("id, train_number, train_name, from_name, to_name, journey_date, departure_at, status, ticket_count, price_per_ticket, ready_to_bargain")
-        .eq("seller_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
+      const [trainResult, movieResult] = await Promise.all([
+        supabase
+          .from("listings")
+          .select("id, category, train_number, train_name, from_name, to_name, journey_date, departure_at, status, ticket_count, price_per_ticket, ready_to_bargain, created_at")
+          .eq("seller_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("movie_listings")
+          .select("id, movie_name, poster_url, city, cinema_hall, show_date, show_at, status, ticket_count, price_mode, price_per_ticket, ready_to_bargain, created_at")
+          .eq("seller_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10)
+      ]);
+      const trainListings = (trainResult.data || []).map(item => ({ ...item, listingKind: "TRAIN" }));
+      const movieListings = (movieResult.data || []).map(item => ({ ...item, listingKind: "MOVIE" }));
+      const combined = [...trainListings, ...movieListings]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 10);
       if (mounted) {
-        setMyListings(error ? [] : (data || []));
+        setMyListings((trainResult.error && movieResult.error) ? [] : combined);
         setListingsLoading(false);
       }
     }
@@ -431,11 +444,15 @@ function Dashboard({ user, onLogout }) {
               <div className="my-listing-grid">
                 {myListings.slice(0, 4).map(listing => (
                   <article className="my-listing-card" key={listing.id}>
-                    <div className="my-listing-icon"><Ticket size={20} /></div>
+                    {listing.listingKind === "MOVIE" ? (
+                      <div className="my-listing-poster">{listing.poster_url ? <img src={listing.poster_url} alt="" /> : <span>🎬</span>}</div>
+                    ) : (
+                      <div className="my-listing-icon"><Ticket size={20} /></div>
+                    )}
                     <div className="my-listing-info">
-                      <b>{listing.from_name} → {listing.to_name}</b>
-                      <span>{listing.train_number} · {listing.train_name}</span>
-                      <small>{listing.journey_date} · {listing.ticket_count} ticket{listing.ticket_count === 1 ? "" : "s"}</small>
+                      <b>{listing.listingKind === "MOVIE" ? listing.movie_name : (listing.from_name + " → " + listing.to_name)}</b>
+                      <span>{listing.listingKind === "MOVIE" ? (listing.cinema_hall + " · " + listing.city) : (listing.train_number + " · " + listing.train_name)}</span>
+                      <small>{listing.listingKind === "MOVIE" ? (listing.show_date + " · " + listing.ticket_count + " ticket" + (listing.ticket_count === 1 ? "" : "s")) : (listing.journey_date + " · " + listing.ticket_count + " ticket" + (listing.ticket_count === 1 ? "" : "s"))}</small>
                     </div>
                     <div className="my-listing-side">
                       <strong>{listing.price_per_ticket ? "₹" + Number(listing.price_per_ticket).toLocaleString("en-IN") : "Price varies"}</strong>

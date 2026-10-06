@@ -315,3 +315,80 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .preview-train-artwork{width:100%;height:100%;display:block}
 .marketplace-train-icon,.detail-train-icon{width:100%;height:100%;display:block;object-fit:cover}
 .my-listing-train-artwork{width:100%;height:100%;display:block}
+
+
+/* Shared navigation across every signed-in page */
+.universal-sidebar{
+  background:#fff;
+  border-right:1px solid #ececf3;
+  padding:22px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+  box-sizing:border-box;
+}
+.universal-sidebar nav{display:flex;flex-direction:column;gap:5px}
+.universal-side-nav{
+  width:100%;
+  min-height:44px;
+  border:0;
+  background:transparent;
+  color:#50516a;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 13px;
+  border-radius:11px;
+  text-align:left;
+  font:600 12px "Manrope",sans-serif;
+  cursor:pointer;
+  transition:background .15s ease,color .15s ease,transform .15s ease;
+}
+.universal-side-nav:hover{background:#f3f0ff;color:#6336ec}
+.universal-side-nav.active{background:#eee8ff;color:#6336ec}
+.universal-side-nav:active{transform:scale(.985)}
+.universal-side-nav svg{flex-shrink:0}
+.universal-sidebar>.logout-nav{margin-top:auto;color:#55576d}
+.universal-sidebar>.logout-nav:hover{background:#fff0f2;color:#c33d57}
+
+@media(min-width:761px){
+  .marketplace-body>.universal-sidebar{min-height:calc(100vh - 64px)}
+  .listing-layout>.universal-sidebar{min-height:calc(100vh - 58px)}
+}
+@media(max-width:760px){
+  .marketplace-body>.universal-sidebar,
+  .listing-layout>.universal-sidebar{
+    min-height:auto;
+    border-right:0;
+    border-bottom:1px solid #ececf3;
+    padding:9px;
+    overflow-x:auto;
+  }
+  .marketplace-body>.universal-sidebar nav,
+  .listing-layout>.universal-sidebar nav{
+    flex-direction:row;
+    gap:6px;
+    overflow-x:auto;
+  }
+  .marketplace-body>.universal-sidebar .universal-side-nav,
+  .listing-layout>.universal-sidebar .universal-side-nav{
+    width:auto;
+    min-width:max-content;
+    min-height:38px;
+    padding:0 12px;
+  }
+  .universal-sidebar>.logout-nav{margin-top:6px;width:auto;min-width:max-content}
+}
+
+/* Larger marketplace detail typography */
+.marketplace-detail .detail-body h2{font-size:30px;line-height:1.18}
+.marketplace-detail .detail-body>p{font-size:14px;line-height:1.45}
+.marketplace-detail .detail-expiry{font-size:13px;padding:13px;margin:16px 0}
+.marketplace-detail .detail-body h4{font-size:17px;margin:21px 0 11px}
+.marketplace-detail .detail-info div{font-size:13px;padding:12px 13px}
+.marketplace-detail .detail-info span{font-size:13px}
+.marketplace-detail .detail-info b{font-size:13px}
+.marketplace-detail .detail-description{font-size:14px!important;line-height:1.7}
+.marketplace-detail .detail-actions button{font-size:13px;padding:13px 10px}
+.marketplace-detail .marketplace-kind{font-size:10px}

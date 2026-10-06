@@ -407,3 +407,45 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   .coming-soon-stage{min-height:calc(100vh - 58px);padding:20px}
   .coming-soon-stage .coming-soon-back{left:16px;top:16px}
 }
+
+
+.my-listing-full-card.is-editable{cursor:pointer;transition:border-color .18s,box-shadow .18s,transform .18s}
+.my-listing-full-card.is-editable:hover{border-color:#a894f5;box-shadow:0 9px 28px rgba(63,43,150,.10);transform:translateY(-1px)}
+.my-listing-full-card.is-expired{opacity:.78}
+.my-listing-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:10px}
+.my-listing-actions button{border-radius:8px;padding:7px 11px;font:800 10px "Manrope",sans-serif;cursor:pointer}
+.my-listing-edit{border:1px solid #d9d1ff;background:#f4f0ff;color:#6338e8}
+.my-listing-expire{border:1px solid #f0cfd5;background:#fff5f6;color:#b33c51}
+.my-listing-edit:hover{background:#eae3ff}
+.my-listing-expire:hover{background:#ffebee}
+.my-listing-locked{display:block;margin-top:9px;color:#b33c51!important;font-size:10px!important;line-height:1.35}
+.listing-edit-overlay{position:fixed;inset:0;z-index:100;background:rgba(18,16,38,.42);backdrop-filter:blur(4px);display:grid;place-items:center;padding:20px}
+.listing-edit-modal{width:min(560px,100%);background:#fff;border:1px solid #e4e0f1;border-radius:18px;box-shadow:0 24px 70px rgba(25,18,65,.22);padding:24px}
+.listing-edit-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.listing-edit-head span{font-size:9px;font-weight:900;letter-spacing:1.5px;color:#6338e8}
+.listing-edit-head h2{margin:6px 0 4px;font:800 22px "Manrope";color:#20213a}
+.listing-edit-head p{margin:0;color:#77758a;font-size:12px}
+.listing-edit-head>button{border:0;background:#f3f1fa;color:#56576d;width:32px;height:32px;border-radius:50%;font-size:22px;cursor:pointer}
+.listing-edit-note{margin:18px 0;padding:11px 13px;border-radius:10px;background:#f1edff;color:#5d49aa;font-size:11px;line-height:1.55}
+.listing-edit-field{display:block;margin-top:15px}
+.listing-edit-field>span{display:block;margin-bottom:7px;color:#30314e;font-size:11px;font-weight:800}
+.listing-edit-field>div{height:44px;display:flex;align-items:center;border:1px solid #dedfec;border-radius:10px;padding:0 12px}
+.listing-edit-field>div b{margin-right:8px;color:#6338e8}
+.listing-edit-field input,.listing-edit-field textarea{width:100%;border:0;outline:0;background:#fff;color:#25263d;font:500 13px "DM Sans",sans-serif}
+.listing-edit-field textarea{min-height:105px;border:1px solid #dedfec;border-radius:10px;padding:11px 12px;resize:vertical;box-sizing:border-box}
+.listing-edit-toggle{margin-top:15px;display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #e5e3ee;border-radius:10px}
+.listing-edit-toggle b{display:block;color:#30314e;font-size:12px}
+.listing-edit-toggle small{display:block;margin-top:3px;color:#85869a;font-size:10px}
+.listing-edit-toggle button{width:43px;height:24px;border:0;border-radius:20px;background:#d7d5df;padding:3px;cursor:pointer}
+.listing-edit-toggle button span{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .18s}
+.listing-edit-toggle button.on{background:#6336ec}
+.listing-edit-toggle button.on span{transform:translateX(19px)}
+.listing-edit-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
+.listing-edit-actions button{border:1px solid #ddd9e9;background:#fff;color:#56576d;border-radius:9px;padding:10px 16px;font:800 11px "Manrope";cursor:pointer}
+.listing-edit-actions .modern-primary{border-color:#6336ec;background:#6336ec;color:#fff}
+.listing-edit-actions button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){
+  .my-listing-actions{justify-content:flex-start}
+  .listing-edit-overlay{padding:12px}
+  .listing-edit-modal{padding:19px}
+}

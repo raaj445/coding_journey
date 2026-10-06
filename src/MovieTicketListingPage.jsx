@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Bell, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";\nimport { supabase } from "./lib/supabase";
+import { ArrowRight, Bell, Home, MapPin, Music2, Search, Ticket, Users } from "lucide-react";
+import { supabase } from "./lib/supabase";
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || "";
 
@@ -57,7 +58,8 @@ export default function MovieTicketListingPage({ onBack, onTrain, states, cities
   const [samePrice, setSamePrice] = useState(true);
   const [price, setPrice] = useState("800");
   const [bargain, setBargain] = useState(true);
-  const [description, setDescription] = useState("2 premium tickets for Pushpa 2 at INOX South City. Good seats. Genuine buyers only.");\n  const [posting, setPosting] = useState(false);
+  const [description, setDescription] = useState("2 premium tickets for Pushpa 2 at INOX South City. Good seats. Genuine buyers only.");
+  const [posting, setPosting] = useState(false);
 
   const cities = citiesByState[stateName] || [];
   const halls = cinemaHallsByCity[city] || ["Other"];

@@ -330,75 +330,189 @@ function MyListingsPage({ user, onBack, onNavigate, onLogout }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [editBargain, setEditBargain] = useState(false);
+  const [editDescription, setEditDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function loadListings() {
+    if (!user?.id) { setLoading(false); return; }
+    setLoading(true);
+    const [tr, mv, co] = await Promise.all([
+      supabase.from("listings").select("id,train_number,train_name,from_name,to_name,journey_date,departure_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at,expired_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50),
+      supabase.from("movie_listings").select("id,movie_name,poster_url,city,cinema_hall,show_date,show_time,show_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at,expired_at,language,format").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50),
+      supabase.from("concert_listings").select("id,event_name,artist_name,city,venue,event_date,event_time,event_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at,expired_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50)
+    ]);
+    const errors = [tr.error, mv.error, co.error].filter(Boolean);
+    if (errors.length === 3) {
+      setError(errors[0].message);
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    const normalized = [
+      ...(tr.data || []).map(x => ({ ...x, kind: "TRAIN", title: x.train_name || "Train Ticket", place: x.from_name + " → " + x.to_name, eventAt: x.departure_at })),
+      ...(mv.data || []).map(x => ({ ...x, kind: "MOVIE", title: x.movie_name || "Movie Ticket", place: x.cinema_hall + " · " + x.city, eventAt: x.show_at })),
+      ...(co.data || []).map(x => ({ ...x, kind: "CONCERT", title: x.event_name || "Concert Ticket", place: x.venue + " · " + x.city, eventAt: x.event_at }))
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    setItems(normalized);
+    setLoading(false);
+  }
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      if (!user?.id) { setLoading(false); return; }
-      setLoading(true);
-      const [tr, mv, co] = await Promise.all([
-        supabase.from("listings").select("id,train_number,train_name,from_name,to_name,journey_date,departure_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50),
-        supabase.from("movie_listings").select("id,movie_name,poster_url,city,cinema_hall,show_date,show_time,show_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50),
-        supabase.from("concert_listings").select("id,event_name,artist_name,city,venue,event_date,event_time,event_at,status,ticket_count,price_per_ticket,ready_to_bargain,description,created_at").eq("seller_id", user.id).order("created_at", { ascending: false }).limit(50)
-      ]);
-      if (!mounted) return;
-      const errors = [tr.error, mv.error, co.error].filter(Boolean);
-      if (errors.length === 3) { setError(errors[0].message); setLoading(false); return; }
-      const normalized = [
-        ...(tr.data || []).map(x => ({ ...x, kind: "TRAIN", title: x.train_name || "Train Ticket", place: x.from_name + " → " + x.to_name, eventAt: x.departure_at })),
-        ...(mv.data || []).map(x => ({ ...x, kind: "MOVIE", title: x.movie_name || "Movie Ticket", place: x.cinema_hall + " · " + x.city, eventAt: x.show_at })),
-        ...(co.data || []).map(x => ({ ...x, kind: "CONCERT", title: x.event_name || "Concert Ticket", place: x.venue + " · " + x.city, eventAt: x.event_at }))
-      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setItems(normalized);
-      setLoading(false);
-    }
-    load();
+    loadListings().catch(err => {
+      if (mounted) {
+        setError(err?.message || "Could not load your listings.");
+        setLoading(false);
+      }
+    });
     return () => { mounted = false; };
   }, [user?.id]);
+
+  function openEdit(item) {
+    if (item.status !== "ACTIVE") return;
+    setEditing(item);
+    setEditPrice(String(item.price_per_ticket ?? ""));
+    setEditBargain(Boolean(item.ready_to_bargain));
+    setEditDescription(item.description || "");
+  }
+
+  async function saveEdit() {
+    if (!editing || editing.status !== "ACTIVE") return;
+    const priceValue = Number(editPrice);
+    if (!Number.isFinite(priceValue) || priceValue < 0) {
+      alert("Please enter a valid price.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const table = editing.kind === "TRAIN" ? "listings" : editing.kind === "MOVIE" ? "movie_listings" : "concert_listings";
+      const { error: updateError } = await supabase
+        .from(table)
+        .update({
+          price_per_ticket: priceValue,
+          ready_to_bargain: editBargain,
+          description: editDescription.trim() || null
+        })
+        .eq("id", editing.id)
+        .eq("seller_id", user.id)
+        .eq("status", "ACTIVE");
+      if (updateError) throw updateError;
+      setItems(current => current.map(item => item.id === editing.id && item.kind === editing.kind
+        ? { ...item, price_per_ticket: priceValue, ready_to_bargain: editBargain, description: editDescription.trim() || null }
+        : item
+      ));
+      setEditing(null);
+    } catch (err) {
+      alert(err?.message || "Listing could not be updated.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function expireListing(item) {
+    if (item.status !== "ACTIVE") return;
+    const confirmed = window.confirm(
+      "Expire this listing now?\n\nOnce a listing is expired, it CANNOT be made active again. You will have to create a new listing to sell these tickets.\n\nDo you want to continue?"
+    );
+    if (!confirmed) return;
+    const table = item.kind === "TRAIN" ? "listings" : item.kind === "MOVIE" ? "movie_listings" : "concert_listings";
+    try {
+      const { error: updateError } = await supabase
+        .from(table)
+        .update({ status: "EXPIRED", expired_at: new Date().toISOString() })
+        .eq("id", item.id)
+        .eq("seller_id", user.id)
+        .eq("status", "ACTIVE");
+      if (updateError) throw updateError;
+      setItems(current => current.map(row => row.id === item.id && row.kind === item.kind
+        ? { ...row, status: "EXPIRED", expired_at: new Date().toISOString() }
+        : row
+      ));
+      if (editing?.id === item.id && editing?.kind === item.kind) setEditing(null);
+    } catch (err) {
+      alert(err?.message || "Listing could not be expired.");
+    }
+  }
 
   return (
     <main className="my-listings-shell">
       <UniversalSidebar activeNav="My Listings" onNavigate={onNavigate || (label => label === "Home" && onBack?.())} onLogout={onLogout} />
       <section className="my-listings-page-content">
-      <header className="my-listings-header">
-        <div>
-          <button className="my-listings-back" onClick={onBack}>← Back to Dashboard</button>
-          <span className="my-listings-kicker">CONNECTHUB</span>
-          <h1>My Listings</h1>
-          <p>Only listings posted by you are shown here.</p>
-        </div>
-        <div className="my-listings-count">{items.length} listing{items.length === 1 ? "" : "s"}</div>
-      </header>
-      {loading ? <div className="my-listings-empty">Loading your listings...</div> :
-       error ? <div className="my-listings-empty error">{error}</div> :
-       !items.length ? <div className="my-listings-empty"><Ticket size={34}/><b>You haven't posted any listings yet.</b><span>Create a listing and it will appear here.</span></div> :
-       <div className="my-listings-list">
-         {items.map(item => (
-           <article className="my-listing-full-card" key={item.kind + "-" + item.id}>
-             <div className="my-listing-full-image">
-               {item.kind === "TRAIN" ? <TrainArtwork className="my-listing-train-artwork" /> :
-                item.kind === "MOVIE" && item.poster_url ? <img src={item.poster_url} alt="" /> :
-                item.kind === "MOVIE" ? <Ticket size={34}/> : <Music2 size={34}/>}
-             </div>
-             <div className="my-listing-full-main">
-               <span className={"my-listing-kind " + item.kind.toLowerCase()}>{item.kind}</span>
-               <h2>{item.title}</h2>
-               <p><MapPin size={15}/>{item.place}</p>
-               <p><Ticket size={15}/>{item.eventAt ? new Date(item.eventAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"} · {item.ticket_count} ticket{item.ticket_count === 1 ? "" : "s"}</p>
-               {item.kind === "TRAIN" && <small>{item.train_number} · {item.from_name} → {item.to_name}</small>}
-               {item.kind === "MOVIE" && <small>{item.language || ""}{item.language && item.format ? " · " : ""}{item.format || ""}</small>}
-               {item.kind === "CONCERT" && <small>{item.artist_name || "Artist / Performer"}</small>}
-             </div>
-             <div className="my-listing-full-side">
-               <strong>₹{Number(item.price_per_ticket || 0).toLocaleString("en-IN")}</strong>
-               <span>per ticket</span>
-               <em className={item.status === "ACTIVE" ? "listing-active" : "listing-status"}>{item.status}</em>
-               {item.ready_to_bargain && <b>Bargain available</b>}
-             </div>
-           </article>
-         ))}
-       </div>}
-    </section>
+        <header className="my-listings-header">
+          <div>
+            <button className="my-listings-back" onClick={onBack}>← Back to Dashboard</button>
+            <span className="my-listings-kicker">CONNECTHUB</span>
+            <h1>My Listings</h1>
+            <p>Only listings posted by you are shown here.</p>
+          </div>
+          <div className="my-listings-count">{items.length} listing{items.length === 1 ? "" : "s"}</div>
+        </header>
+
+        {loading ? <div className="my-listings-empty">Loading your listings...</div> :
+         error ? <div className="my-listings-empty error">{error}</div> :
+         !items.length ? <div className="my-listings-empty"><Ticket size={34}/><b>You haven't posted any listings yet.</b><span>Create a listing and it will appear here.</span></div> :
+         <div className="my-listings-list">
+           {items.map(item => (
+             <article
+               className={"my-listing-full-card " + (item.status === "ACTIVE" ? "is-editable" : "is-expired")}
+               key={item.kind + "-" + item.id}
+               onClick={() => openEdit(item)}
+             >
+               <div className="my-listing-full-image">
+                 {item.kind === "TRAIN" ? <TrainArtwork className="my-listing-train-artwork" /> :
+                  item.kind === "MOVIE" && item.poster_url ? <img src={item.poster_url} alt="" /> :
+                  item.kind === "MOVIE" ? <Ticket size={34}/> : <Music2 size={34}/>}
+               </div>
+               <div className="my-listing-full-main">
+                 <span className={"my-listing-kind " + item.kind.toLowerCase()}>{item.kind}</span>
+                 <h2>{item.title}</h2>
+                 <p><MapPin size={15}/>{item.place}</p>
+                 <p><Ticket size={15}/>{item.eventAt ? new Date(item.eventAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"} · {item.ticket_count} ticket{item.ticket_count === 1 ? "" : "s"}</p>
+                 {item.kind === "TRAIN" && <small>{item.train_number} · {item.from_name} → {item.to_name}</small>}
+                 {item.kind === "MOVIE" && <small>{item.language || ""}{item.language && item.format ? " · " : ""}{item.format || ""}</small>}
+                 {item.kind === "CONCERT" && <small>{item.artist_name || "Artist / Performer"}</small>}
+               </div>
+               <div className="my-listing-full-side">
+                 <strong>₹{Number(item.price_per_ticket || 0).toLocaleString("en-IN")}</strong>
+                 <span>per ticket</span>
+                 <em className={item.status === "ACTIVE" ? "listing-active" : "listing-status"}>{item.status}</em>
+                 {item.ready_to_bargain && <b>Bargain available</b>}
+                 {item.status === "ACTIVE" ? (
+                   <div className="my-listing-actions">
+                     <button type="button" className="my-listing-edit" onClick={event => { event.stopPropagation(); openEdit(item); }}>Edit</button>
+                     <button type="button" className="my-listing-expire" onClick={event => { event.stopPropagation(); expireListing(item); }}>Expire</button>
+                   </div>
+                 ) : (
+                   <small className="my-listing-locked">Expired — create a new listing to sell again</small>
+                 )}
+               </div>
+             </article>
+           ))}
+         </div>}
+
+        {editing && (
+          <div className="listing-edit-overlay" onMouseDown={event => { if (event.target === event.currentTarget && !saving) setEditing(null); }}>
+            <section className="listing-edit-modal" onMouseDown={event => event.stopPropagation()}>
+              <div className="listing-edit-head">
+                <div>
+                  <span>EDIT LISTING</span>
+                  <h2>{editing.title}</h2>
+                  <p>{editing.place}</p>
+                </div>
+                <button type="button" onClick={() => !saving && setEditing(null)} aria-label="Close">×</button>
+              </div>
+              <div className="listing-edit-note">Journey/show/event details stay fixed here. You can update the selling price, bargaining option and buyer note without changing the verified schedule.</div>
+              <label className="listing-edit-field"><span>Price per ticket</span><div><b>₹</b><input value={editPrice} onChange={e => setEditPrice(e.target.value.replace(/[^0-9.]/g,""))} inputMode="decimal" /></div></label>
+              <label className="listing-edit-toggle"><span><b>Ready to Bargain</b><small>Allow buyers to send offers</small></span><button type="button" className={editBargain ? "on" : ""} onClick={() => setEditBargain(value => !value)}><span/></button></label>
+              <label className="listing-edit-field"><span>Description / Note</span><textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} maxLength={500} /></label>
+              <div className="listing-edit-actions"><button type="button" onClick={() => setEditing(null)} disabled={saving}>Cancel</button><button type="button" className="modern-primary" onClick={saveEdit} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</button></div>
+            </section>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

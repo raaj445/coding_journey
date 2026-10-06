@@ -500,3 +500,9 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   .favorite-card-art{height:92px}
   .favorite-card-side{grid-column:2;align-items:flex-start;text-align:left}
 }
+
+.dashboard-favorite-button{position:relative}
+.dashboard-favorite-button i{position:absolute;right:-1px;top:-2px;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:#6336ec;color:#fff;font:800 8px/14px "Manrope",sans-serif;font-style:normal;text-align:center}
+.dashboard-favorite-button:not(:has(i)){color:#747489}
+.dashboard-favorite-button svg{transition:.18s ease}
+.dashboard-favorite-button:hover svg{color:#ef4672;transform:scale(1.08)}

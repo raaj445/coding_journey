@@ -13,21 +13,40 @@ const items = [
   ["Settings", Settings],
 ];
 
-export default function UniversalSidebar({ activeNav = "", onNavigate, onLogout }) {
+export default function UniversalSidebar({ activeNav = "", activeSub = "", onNavigate, onLogout }) {
   const go = label => onNavigate?.(label);
   return (
     <aside className="universal-sidebar">
       <nav>
         {items.map(([label, Icon]) => (
-          <button
-            type="button"
-            key={label}
-            className={activeNav === label ? "universal-side-nav active" : "universal-side-nav"}
-            onClick={() => go(label)}
-          >
-            <Icon size={18} />
-            <span>{label}</span>
-          </button>
+          <div className="universal-nav-group" key={label}>
+            <button
+              type="button"
+              className={activeNav === label ? "universal-side-nav active" : "universal-side-nav"}
+              onClick={() => go(label)}
+            >
+              <Icon size={18} />
+              <span>{label}</span>
+            </button>
+            {label === "Create Listing" && (
+              <div className="universal-listing-subnav">
+                {[
+                  ["TRAIN", "Train Ticket"],
+                  ["MOVIE", "Movie Ticket"],
+                  ["CONCERT", "Concert Ticket"],
+                ].map(([value, text]) => (
+                  <button
+                    type="button"
+                    key={value}
+                    className={activeSub === value ? "universal-subnav-item active" : "universal-subnav-item"}
+                    onClick={() => go(value === "TRAIN" ? "Create Listing" : value === "MOVIE" ? "Movie Ticket" : "Concert Ticket")}
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
       {onLogout && (

@@ -342,7 +342,7 @@ function Dashboard({ user, onLogout }) {
         return;
       }
       setListingsLoading(true);
-      const [trainResult, movieResult] = await Promise.all([
+      const [trainResult, movieResult, concertResult] = await Promise.all([
         supabase
           .from("listings")
           .select("id, category, train_number, train_name, from_name, to_name, journey_date, departure_at, status, ticket_count, price_per_ticket, ready_to_bargain, created_at")
@@ -354,15 +354,22 @@ function Dashboard({ user, onLogout }) {
           .select("id, movie_name, poster_url, city, cinema_hall, show_date, show_at, status, ticket_count, price_mode, price_per_ticket, ready_to_bargain, created_at")
           .eq("seller_id", user.id)
           .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("concert_listings")
+          .select("id, event_name, artist_name, city, venue, event_date, event_at, status, ticket_count, price_mode, price_per_ticket, ready_to_bargain, created_at")
+          .eq("seller_id", user.id)
+          .order("created_at", { ascending: false })
           .limit(10)
       ]);
       const trainListings = (trainResult.data || []).map(item => ({ ...item, listingKind: "TRAIN" }));
       const movieListings = (movieResult.data || []).map(item => ({ ...item, listingKind: "MOVIE" }));
-      const combined = [...trainListings, ...movieListings]
+      const concertListings = (concertResult.data || []).map(item => ({ ...item, listingKind: "CONCERT" }));
+      const combined = [...trainListings, ...movieListings, ...(concertListings.length ? concertListings : [])]
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 10);
       if (mounted) {
-        setMyListings((trainResult.error && movieResult.error) ? [] : combined);
+        setMyListings((trainResult.error && movieResult.error && concertResult.error) ? [] : combined);
         setListingsLoading(false);
       }
     }
@@ -449,12 +456,12 @@ function Dashboard({ user, onLogout }) {
                     {listing.listingKind === "MOVIE" ? (
                       <div className="my-listing-poster">{listing.poster_url ? <img src={listing.poster_url} alt="" /> : <span>🎬</span>}</div>
                     ) : (
-                      <div className="my-listing-icon"><Ticket size={20} /></div>
+                      <div className="my-listing-icon">{listing.listingKind === "CONCERT" ? <Music2 size={20} /> : <Ticket size={20} />}</div>
                     )}
                     <div className="my-listing-info">
-                      <b>{listing.listingKind === "MOVIE" ? listing.movie_name : (listing.from_name + " → " + listing.to_name)}</b>
-                      <span>{listing.listingKind === "MOVIE" ? (listing.cinema_hall + " · " + listing.city) : (listing.train_number + " · " + listing.train_name)}</span>
-                      <small>{listing.listingKind === "MOVIE" ? (listing.show_date + " · " + listing.ticket_count + " ticket" + (listing.ticket_count === 1 ? "" : "s")) : (listing.journey_date + " · " + listing.ticket_count + " ticket" + (listing.ticket_count === 1 ? "" : "s"))}</small>
+                      <b>{listing.listingKind === "MOVIE" ? listing.movie_name : listing.listingKind === "CONCERT" ? listing.event_name : (listing.from_name + " → " + listing.to_name)}</b>
+                      <span>{listing.listingKind === "MOVIE" ? (listing.cinema_hall + " · " + listing.city) : listing.listingKind === "CONCERT" ? (listing.venue + " · " + listing.city) : (listing.train_number + " · " + listing.train_name)}</span>
+                      <small>{listing.listingKind === "MOVIE" ? (listing.show_date + " · " + listing.ticket_count + " ticket" + (listing.ticket_count === 1 ? "" : "s")) : listing.listingKind === "CONCERT" ? (listing.event_date + " · " + listing.ticket_count + " ticket" + (listing.ticket_count === 1 ? "" : "s")) : (listing.journey_date + " · " + listing.ticket_count + " ticket" + (listing.ticket_count === 1 ? "" : "s"))}</small>
                     </div>
                     <div className="my-listing-side">
                       <strong>{listing.price_per_ticket ? "₹" + Number(listing.price_per_ticket).toLocaleString("en-IN") : "Price varies"}</strong>

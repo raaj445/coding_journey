@@ -576,3 +576,41 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .community-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:100;padding:11px 15px;border-radius:10px;background:#24233b;color:#fff;box-shadow:0 12px 30px #0003;font:700 10px "Manrope"}
 @media(max-width:1180px){.community-layout{grid-template-columns:190px minmax(0,1fr)}.community-right{display:none}}
 @media(max-width:760px){.community-topbar{height:58px;padding:0 12px;gap:10px}.community-search{display:none}.community-brand{font-size:17px}.community-top-actions{margin-left:auto}.community-profile-mini b,.community-profile-mini svg{display:none}.community-layout{display:block}.community-layout>.universal-sidebar{position:static;min-height:auto;height:auto}.community-main{padding:10px 10px 35px}.community-header-card{grid-template-columns:65px minmax(0,1fr);gap:10px;padding:0 12px 10px;margin-top:-25px}.community-logo{width:58px;height:58px;border-width:4px;font-size:15px}.community-title-block{padding-top:20px}.community-title-block h1{font-size:18px}.community-title-block p{font-size:9px}.community-title-block small{font-size:8px}.community-header-actions{grid-column:2;padding-top:0}.community-join{height:34px}.community-more{height:34px;width:34px}.community-tabs{overflow-x:auto}.community-tabs button{white-space:nowrap;padding:0 11px}.community-composer{grid-template-columns:30px minmax(0,1fr)}.community-composer-avatar{width:30px;height:30px}.community-composer-actions>div{flex-wrap:wrap}.community-right{display:none}.community-post-head>div{flex-wrap:wrap}.community-comment-box{grid-template-columns:28px minmax(0,1fr)}.community-comment-box button{grid-column:2;justify-self:end}.community-empty-tab{min-height:330px}}
+
+
+/* Community typography +3px */
+.community-shell{font-size:16px}
+.community-brand{font-size:22px}
+.community-search input{font-size:15px}
+.community-profile-mini b{font-size:13px}
+.community-cover-building{font-size:10px}
+.community-title-block h1{font-size:26px}
+.community-title-block p{font-size:14px}
+.community-title-block small{font-size:13px}
+.community-tabs button{font-size:14px}
+.community-composer-body textarea{font-size:14px}
+.community-composer-actions button{font-size:12px}
+.community-feed-filter button{font-size:12px}
+.community-post-head b{font-size:14px}
+.community-post-head span{font-size:11px}
+.community-post-head small{font-size:11px}
+.community-post-text{font-size:14px}
+.community-post-tags span{font-size:11px}
+.community-post-actions button{font-size:12px}
+.community-comment-box input{font-size:13px}
+.community-comment-box button{font-size:12px}
+.community-empty-tab h2{font-size:20px}
+.community-empty-tab p{font-size:14px}
+.community-empty-tab button{font-size:13px}
+.community-side-card h2{font-size:18px}
+.community-side-card>p{font-size:13px}
+.community-info-row{font-size:13px}
+.community-rules{font-size:13px}
+.community-side-title-row button{font-size:12px}
+.community-event b{font-size:13px}
+.community-event small{font-size:11px}
+.community-event>button{font-size:11px}
+.community-member-row b{font-size:13px}
+.community-member-row small{font-size:11px}
+.community-member-row>button{font-size:11px}
+.community-toast{font-size:13px}

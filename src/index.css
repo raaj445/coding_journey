@@ -506,3 +506,73 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .dashboard-favorite-button:not(:has(i)){color:#747489}
 .dashboard-favorite-button svg{transition:.18s ease}
 .dashboard-favorite-button:hover svg{color:#ef4672;transform:scale(1.08)}
+
+
+/* Communities */
+.community-shell{min-height:100vh;background:#f8f8fd;color:#1b1c34}
+.community-topbar{height:64px;display:flex;align-items:center;gap:28px;padding:0 24px;background:#fff;border-bottom:1px solid #e9e8f1;position:sticky;top:0;z-index:40}
+.community-brand{display:flex;align-items:center;gap:8px;border:0;background:none;color:#33208d;font:800 19px "Manrope",sans-serif;cursor:pointer;white-space:nowrap}
+.community-brand>span:last-child span{color:#6336ec}
+.community-brand-mark{width:29px;height:29px;border-radius:9px;background:#6336ec;color:#fff;display:grid;place-items:center}
+.community-search{height:40px;flex:1;max-width:430px;margin:auto;display:flex;align-items:center;gap:9px;padding:0 14px;border-radius:10px;background:#f0f1f8;color:#5f6177}
+.community-search input{width:100%;border:0;outline:0;background:transparent;font:500 12px "DM Sans",sans-serif;color:#292a42}
+.community-top-actions{display:flex;align-items:center;gap:7px}
+.community-top-actions>button{position:relative;border:0;background:transparent;color:#4f5067;width:35px;height:35px;border-radius:9px;display:grid;place-items:center;cursor:pointer}
+.community-top-actions>button:hover{background:#f2efff;color:#6336ec}
+.community-notification i{position:absolute;right:5px;top:5px;width:7px;height:7px;border-radius:50%;background:#ff3f55;border:2px solid #fff}
+.community-profile-mini{width:auto!important;display:flex!important;gap:7px!important;padding:0 4px!important}
+.community-profile-mini>span{width:31px;height:31px;border-radius:50%;overflow:hidden;background:#eee9ff;color:#6336ec;display:grid;place-items:center}
+.community-profile-mini>span img{width:100%;height:100%;object-fit:cover}
+.community-profile-mini b{font-size:10px;color:#34354c}
+.community-layout{display:grid;grid-template-columns:210px minmax(0,1fr) 350px;min-height:calc(100vh - 64px)}
+.community-layout>.universal-sidebar{min-height:calc(100vh - 64px);position:sticky;top:64px;height:calc(100vh - 64px)}
+.community-main{min-width:0;padding:10px 14px 45px;max-width:900px;width:100%;margin:0 auto}
+.community-cover{background:#fff;border:1px solid #e4e3ed;border-radius:14px;overflow:hidden;box-shadow:0 4px 15px #29234b08}
+.community-cover-art{height:112px;position:relative;overflow:hidden;background:linear-gradient(115deg,#202b34,#8d6871 55%,#f4b3a1)}
+.community-cover-art:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#ffffff12,#17142655)}
+.community-cover-building{position:absolute;left:39%;bottom:13px;width:23%;height:58px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#f6f2eb,#d4d1c9);display:grid;place-items:center;color:#4a4860;font:800 7px "Manrope";letter-spacing:1px;box-shadow:0 -18px 0 -12px #d4d1c9}
+.community-cover-trees{position:absolute;inset:auto 0 0;height:46px;background:radial-gradient(circle at 12% 90%,#172d1c 0 20px,transparent 21px),radial-gradient(circle at 25% 100%,#203a22 0 30px,transparent 31px),radial-gradient(circle at 77% 100%,#1b3320 0 34px,transparent 35px),radial-gradient(circle at 90% 90%,#29472a 0 24px,transparent 25px)}
+.community-header-card{display:grid;grid-template-columns:88px minmax(0,1fr) auto;gap:15px;align-items:center;padding:0 17px 12px;margin-top:-31px;position:relative}
+.community-logo{width:78px;height:78px;border:5px solid #fff;border-radius:50%;background:linear-gradient(145deg,#eeeaff,#cfc6ff);color:#352185;display:grid;place-items:center;font:900 19px "Manrope";box-shadow:0 4px 15px #29234b15}
+.community-title-block{padding-top:25px;min-width:0}
+.community-title-block h1{margin:0;font:800 23px "Manrope";letter-spacing:-.5px}
+.community-title-block p{margin:5px 0 4px;color:#686a7e;font-size:11px}.community-title-block p span{margin:0 6px;color:#a4a3b0}
+.community-title-block small{color:#76788b;font-size:10px}
+.community-header-actions{display:flex;align-items:center;gap:9px;padding-top:25px}
+.community-join{height:38px;padding:0 17px;border:1px solid #6336ec;border-radius:9px;background:#fff;color:#6336ec;font:800 11px "Manrope";cursor:pointer}
+.community-join:hover,.community-join.joined{background:#f0edff}
+.community-more{height:38px;width:38px;border:1px solid #e2e0ea;border-radius:9px;background:#fff;color:#626379;font-weight:900;cursor:pointer}
+.community-tabs{display:flex;align-items:center;gap:3px;padding:0 13px;border-top:1px solid #eeedf3}
+.community-tabs button{height:47px;padding:0 15px;border:0;border-bottom:2px solid transparent;background:transparent;color:#56586f;display:flex;align-items:center;gap:7px;font:700 11px "Manrope";cursor:pointer}
+.community-tabs button:hover{color:#6336ec;background:#faf8ff}.community-tabs button.active{color:#6336ec;border-bottom-color:#6336ec}
+.community-composer{display:grid;grid-template-columns:36px minmax(0,1fr);gap:11px;margin-top:13px;padding:13px;background:#fff;border:1px solid #e4e3ed;border-radius:13px;box-shadow:0 4px 14px #29234b07}
+.community-composer-avatar,.community-post-avatar,.community-comment-avatar{width:35px;height:35px;border-radius:50%;overflow:hidden;background:#eee9ff;color:#6336ec;display:grid;place-items:center;flex-shrink:0}
+.community-composer-avatar img,.community-post-avatar img,.community-comment-avatar img{width:100%;height:100%;object-fit:cover}
+.community-composer-body textarea{width:100%;min-height:52px;resize:none;border:0;outline:0;background:#f7f7fb;border-radius:9px;padding:12px;font:500 11px/1.5 "DM Sans";box-sizing:border-box;color:#30314a}
+.community-composer-body textarea:focus{box-shadow:0 0 0 2px #6336ec20}
+.community-composer-actions{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+.community-composer-actions>div{display:flex;gap:5px}.community-composer-actions button{border:0;background:#f6f5fa;color:#5f6075;border-radius:8px;padding:7px 9px;font:700 9px "Manrope";cursor:pointer}
+.community-composer-actions button:hover{background:#eee9ff;color:#6336ec}
+.community-composer-actions .community-post-button{padding:8px 18px;background:#6336ec;color:#fff}.community-composer-actions .community-post-button:hover{background:#5630d2}
+.community-feed-filter{display:flex;gap:6px;margin:12px 0 8px}.community-feed-filter button{border:0;background:#fff;color:#66687d;border-radius:999px;padding:7px 13px;font:700 9px "Manrope";cursor:pointer}.community-feed-filter button:hover{color:#6336ec}.community-feed-filter button.active{background:#6336ec;color:#fff}
+.community-feed{display:grid;gap:10px}.community-post{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;padding:15px;background:#fff;border:1px solid #e5e4ed;border-radius:13px;box-shadow:0 4px 14px #29234b07}
+.community-post-head{display:flex;justify-content:space-between;gap:10px}.community-post-head>div{display:flex;align-items:center;gap:7px;min-width:0}.community-post-head b{font-size:11px;color:#25263e}.community-post-head span{padding:4px 7px;border-radius:8px;background:#eee9ff;color:#6336ec;font-size:8px;font-weight:800}.community-post-head small{color:#9998a7;font-size:8px}.community-post-head>button{border:0;background:transparent;color:#7d7e90;font-weight:900;cursor:pointer}
+.community-post-text{white-space:pre-line;margin:9px 0 8px;color:#4d4e65;font-size:11px;line-height:1.55}
+.community-post-tags{display:flex;gap:5px;flex-wrap:wrap}.community-post-tags span{padding:5px 8px;border-radius:8px;background:#f0edff;color:#5f45b7;font-size:8px;font-weight:700}
+.community-post-actions{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid #f0eff4}
+.community-post-actions button{border:0;background:transparent;color:#6b6c7e;display:flex;align-items:center;gap:5px;border-radius:7px;padding:5px 7px;font:700 9px "Manrope";cursor:pointer}
+.community-post-actions button:hover{background:#f5f2ff;color:#6336ec}.community-post-actions button.active{background:#f1edff;color:#6336ec}.community-post-actions button.like.active{color:#ef4672;background:#fff0f3}.community-post-actions button.bookmark.active{color:#6336ec}
+.community-comment-box{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:7px;align-items:center;margin-top:9px;padding:8px;border-radius:9px;background:#f7f6fb}.community-comment-avatar{width:28px;height:28px}.community-comment-box input{height:30px;border:1px solid #dfddea;border-radius:7px;outline:0;padding:0 9px;font:500 10px "DM Sans";background:#fff}.community-comment-box input:focus{border-color:#876cf1}.community-comment-box button{height:30px;border:0;border-radius:7px;background:#6336ec;color:#fff;padding:0 10px;font:800 9px "Manrope";cursor:pointer}
+.community-empty-tab{min-height:400px;margin-top:13px;background:#fff;border:1px solid #e4e3ed;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;box-shadow:0 4px 14px #29234b07}.community-empty-icon{width:62px;height:62px;border-radius:18px;background:#eee9ff;color:#6336ec;display:grid;place-items:center}.community-empty-tab h2{margin:15px 0 5px;font:800 17px "Manrope"}.community-empty-tab p{max-width:430px;margin:0;color:#858699;font-size:11px;line-height:1.55}.community-empty-tab button{margin-top:14px;border:0;border-radius:9px;background:#6336ec;color:#fff;padding:10px 15px;font:800 10px "Manrope";cursor:pointer}
+.community-right{padding:10px 16px 45px 0;background:#f8f8fd;display:grid;align-content:start;gap:12px}
+.community-side-card{background:#fff;border:1px solid #e4e3ed;border-radius:13px;padding:15px;box-shadow:0 4px 14px #29234b06}
+.community-side-card h2{margin:0 0 12px;font:800 15px "Manrope";color:#24253d}.community-side-card>p{margin:12px 0 0;color:#686a7d;font-size:10px;line-height:1.55}
+.community-info-row{display:flex;align-items:center;gap:10px;margin:11px 0;color:#5d5f73;font-size:10px}.community-info-row svg{color:#6336ec}
+.community-rules{margin:0;padding-left:20px;color:#5f6074;font-size:10px;line-height:1.8}.community-rules li{padding-left:3px}
+.community-side-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.community-side-title-row h2{margin:0}.community-side-title-row button{border:0;background:none;color:#6336ec;font:700 9px "Manrope";cursor:pointer}
+.community-event{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 0;border-top:1px solid #efeff4}.community-event:first-of-type{border-top:0}.community-event-art{width:76px;height:64px;border-radius:8px;background:linear-gradient(135deg,#eae3ff,#f7e9ff);display:grid;place-items:center;font-size:24px}
+.community-event>div:nth-child(2){display:grid;gap:3px;min-width:0}.community-event b{font-size:10px}.community-event small{color:#858699;font-size:8px}.community-event>button{border:1px solid #b9a9ff;background:#fff;color:#6336ec;border-radius:7px;padding:7px 8px;font:800 8px "Manrope";cursor:pointer}
+.community-member-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #efeff4}.community-member-row:first-of-type{border-top:0}.community-member-avatar{width:32px;height:32px;border-radius:50%;background:#eee9ff;color:#6336ec;display:grid;place-items:center}.community-member-row>div{display:grid;gap:3px;min-width:0}.community-member-row b{font-size:10px}.community-member-row small{color:#858699;font-size:8px}.community-member-row>button{border:1px solid #b9a9ff;background:#fff;color:#6336ec;border-radius:7px;padding:7px 9px;font:800 8px "Manrope";cursor:pointer}
+.community-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:100;padding:11px 15px;border-radius:10px;background:#24233b;color:#fff;box-shadow:0 12px 30px #0003;font:700 10px "Manrope"}
+@media(max-width:1180px){.community-layout{grid-template-columns:190px minmax(0,1fr)}.community-right{display:none}}
+@media(max-width:760px){.community-topbar{height:58px;padding:0 12px;gap:10px}.community-search{display:none}.community-brand{font-size:17px}.community-top-actions{margin-left:auto}.community-profile-mini b,.community-profile-mini svg{display:none}.community-layout{display:block}.community-layout>.universal-sidebar{position:static;min-height:auto;height:auto}.community-main{padding:10px 10px 35px}.community-header-card{grid-template-columns:65px minmax(0,1fr);gap:10px;padding:0 12px 10px;margin-top:-25px}.community-logo{width:58px;height:58px;border-width:4px;font-size:15px}.community-title-block{padding-top:20px}.community-title-block h1{font-size:18px}.community-title-block p{font-size:9px}.community-title-block small{font-size:8px}.community-header-actions{grid-column:2;padding-top:0}.community-join{height:34px}.community-more{height:34px;width:34px}.community-tabs{overflow-x:auto}.community-tabs button{white-space:nowrap;padding:0 11px}.community-composer{grid-template-columns:30px minmax(0,1fr)}.community-composer-avatar{width:30px;height:30px}.community-composer-actions>div{flex-wrap:wrap}.community-right{display:none}.community-post-head>div{flex-wrap:wrap}.community-comment-box{grid-template-columns:28px minmax(0,1fr)}.community-comment-box button{grid-column:2;justify-self:end}.community-empty-tab{min-height:330px}}

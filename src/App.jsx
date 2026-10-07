@@ -618,6 +618,289 @@ function FavoritesPage({ user, onBack, onNavigate, onLogout }) {
 }
 
 
+
+function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
+  const [activeTab, setActiveTab] = useState("posts");
+  const [joined, setJoined] = useState(false);
+  const [postText, setPostText] = useState("");
+  const [posts, setPosts] = useState([
+    { id: 1, name: "Rahul Sharma", role: "Student", time: "2h ago", text: "Anyone travelling from KGP to Kolkata this weekend? Looking for a confirmed train ticket for Saturday (21 Oct).", tags: ["Train", "Travel", "Kolkata"], likes: 12, comments: 8 },
+    { id: 2, name: "Priya Singh", role: "Student", time: "5h ago", text: "KGP autumn fest lineup is out! Who’s excited? 🎉\\nLet’s plan a group if anyone is going.", tags: ["Events", "Fest", "IIT Kharagpur"], likes: 28, comments: 14 },
+    { id: 3, name: "Aman Verma", role: "Alumni", time: "8h ago", text: "Any good and affordable PG/hostel options near IIT Kharagpur for a friend? Preferably within 5km.", tags: ["Roommates", "Housing", "Kharagpur"], likes: 17, comments: 6 },
+  ]);
+  const [liked, setLiked] = useState({});
+  const [bookmarked, setBookmarked] = useState({});
+  const [commentOpen, setCommentOpen] = useState({});
+  const [commentText, setCommentText] = useState({});
+  const [followed, setFollowed] = useState({});
+  const [notice, setNotice] = useState("");
+
+  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "You";
+  const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+  const firstName = name.split(" ")[0];
+
+  function showNotice(message) {
+    setNotice(message);
+    window.clearTimeout(window.__connectHubCommunityNotice);
+    window.__connectHubCommunityNotice = window.setTimeout(() => setNotice(""), 2200);
+  }
+
+  function submitPost() {
+    const text = postText.trim();
+    if (!text) {
+      showNotice("Write something before posting.");
+      return;
+    }
+    setPosts(current => [{
+      id: Date.now(),
+      name,
+      role: "Member",
+      time: "Just now",
+      text,
+      tags: ["Community"],
+      likes: 0,
+      comments: 0,
+      avatar
+    }, ...current]);
+    setPostText("");
+    setActiveTab("posts");
+    showNotice("Your post was added to the community feed.");
+  }
+
+  function toggleLike(postId) {
+    setLiked(current => ({ ...current, [postId]: !current[postId] }));
+    setPosts(current => current.map(post => post.id === postId
+      ? { ...post, likes: Math.max(0, post.likes + (liked[postId] ? -1 : 1)) }
+      : post
+    ));
+  }
+
+  function toggleBookmark(postId) {
+    setBookmarked(current => ({ ...current, [postId]: !current[postId] }));
+    showNotice(bookmarked[postId] ? "Removed from bookmarks." : "Saved to bookmarks.");
+  }
+
+  function submitComment(postId) {
+    const text = (commentText[postId] || "").trim();
+    if (!text) return;
+    setPosts(current => current.map(post => post.id === postId ? { ...post, comments: post.comments + 1 } : post));
+    setCommentText(current => ({ ...current, [postId]: "" }));
+    showNotice("Comment added.");
+  }
+
+  const tabConfig = [
+    ["posts", MessageCircle, "Posts"],
+    ["about", UserRound, "About"],
+    ["members", Users, "Members"],
+    ["events", CalendarDays, "Events"],
+    ["tickets", Ticket, "Tickets"],
+  ];
+
+  const emptyCopy = {
+    about: ["No additional information yet", "The community description and details will be expanded here."],
+    members: ["No members to display yet", "Member profiles will appear here as people join the community."],
+    events: ["No upcoming events", "Events created or shared in this community will appear here."],
+    tickets: ["No community tickets yet", "Tickets shared or tagged in this community will appear here."],
+  };
+
+  return (
+    <main className="community-shell">
+      <header className="community-topbar">
+        <button className="community-brand" onClick={onBack} aria-label="Back to ConnectHub">
+          <span className="community-brand-mark"><Users size={19} fill="currentColor" /></span>
+          <span>Connect<span>Hub</span></span>
+        </button>
+        <div className="community-search">
+          <Search size={17} />
+          <input placeholder="Search communities, posts, or topics..." />
+        </div>
+        <div className="community-top-actions">
+          <button aria-label="Favorites" onClick={() => onNavigate?.("Favorites")}><Heart size={20} /></button>
+          <button aria-label="Messages"><MessageCircle size={20} /></button>
+          <button className="community-notification" aria-label="Notifications"><Bell size={19} /><i /></button>
+          <button className="community-profile-mini" onClick={() => showNotice("Profile editing will be added in the next step.")}>
+            <span>{avatar ? <img src={avatar} alt="" /> : <UserRound size={17} />}</span>
+            <b>{firstName}</b>
+            <ChevronDown size={15} />
+          </button>
+        </div>
+      </header>
+
+      <div className="community-layout">
+        <UniversalSidebar activeNav="Communities" onNavigate={onNavigate} onLogout={onLogout} />
+
+        <section className="community-main">
+          <div className="community-cover">
+            <div className="community-cover-art">
+              <div className="community-cover-building">IIT KHARAGPUR</div>
+              <div className="community-cover-trees" />
+            </div>
+            <div className="community-header-card">
+              <div className="community-logo">IIT</div>
+              <div className="community-title-block">
+                <h1>IIT Kharagpur</h1>
+                <p>2,450 members <span>•</span> Public <span>•</span> Students</p>
+                <small>Discussions about academics, campus life, events, travel, and more.</small>
+              </div>
+              <div className="community-header-actions">
+                <button className={joined ? "community-join joined" : "community-join"} onClick={() => { setJoined(value => !value); showNotice(joined ? "You left the community." : "You joined the community."); }}>
+                  {joined ? "✓ Joined" : "Join Community"}
+                </button>
+                <button className="community-more" onClick={() => showNotice("More community actions will be added later.")}>•••</button>
+              </div>
+            </div>
+            <nav className="community-tabs">
+              {tabConfig.map(([id, Icon, label]) => (
+                <button key={id} className={activeTab === id ? "active" : ""} onClick={() => setActiveTab(id)}>
+                  <Icon size={16} /> {label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {activeTab === "posts" ? (
+            <>
+              <section className="community-composer">
+                <div className="community-composer-avatar">
+                  {avatar ? <img src={avatar} alt="" /> : <UserRound size={18} />}
+                </div>
+                <div className="community-composer-body">
+                  <textarea
+                    value={postText}
+                    onChange={event => setPostText(event.target.value)}
+                    onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") submitPost(); }}
+                    placeholder={"Write something to the community, " + firstName + "..."}
+                    rows={2}
+                  />
+                  <div className="community-composer-actions">
+                    <div>
+                      <button onClick={() => showNotice("Image posting will be connected after the community backend is added.")}>＋ Image</button>
+                      <button onClick={() => showNotice("Poll creation will be added after the community backend is added.")}>▥ Poll</button>
+                      <button onClick={() => showNotice("Tagging is ready for the next community update.")}>⌑ Tag</button>
+                    </div>
+                    <button className="community-post-button" onClick={submitPost}>Post</button>
+                  </div>
+                </div>
+              </section>
+
+              <div className="community-feed-filter">
+                <button className="active">Latest</button>
+                <button onClick={() => showNotice("Popular sorting will be connected to real post data later.")}>Popular</button>
+                <button onClick={() => showNotice("Following posts will appear after member following is enabled.")}>Following</button>
+              </div>
+
+              <section className="community-feed">
+                {posts.map(post => (
+                  <article className="community-post" key={post.id}>
+                    <div className="community-post-avatar">
+                      {post.avatar ? <img src={post.avatar} alt="" /> : <UserRound size={18} />}
+                    </div>
+                    <div className="community-post-body">
+                      <div className="community-post-head">
+                        <div>
+                          <b>{post.name}</b>
+                          <span>{post.role}</span>
+                          <small>• {post.time}</small>
+                        </div>
+                        <button onClick={() => showNotice("Post actions will be added later.")}>•••</button>
+                      </div>
+                      <p className="community-post-text">{post.text}</p>
+                      <div className="community-post-tags">
+                        {post.tags.map(tag => <span key={tag}>{tag}</span>)}
+                      </div>
+                      <div className="community-post-actions">
+                        <button className={liked[post.id] ? "active like" : ""} onClick={() => toggleLike(post.id)}>
+                          <Heart size={17} fill={liked[post.id] ? "currentColor" : "none"} /> {post.likes}
+                        </button>
+                        <button className={commentOpen[post.id] ? "active" : ""} onClick={() => setCommentOpen(current => ({ ...current, [post.id]: !current[post.id] }))}>
+                          <MessageCircle size={17} /> {post.comments}
+                        </button>
+                        <button className={bookmarked[post.id] ? "active bookmark" : ""} onClick={() => toggleBookmark(post.id)}>
+                          <Bookmark size={17} fill={bookmarked[post.id] ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+                      {commentOpen[post.id] && (
+                        <div className="community-comment-box">
+                          <div className="community-comment-avatar">
+                            {avatar ? <img src={avatar} alt="" /> : <UserRound size={15} />}
+                          </div>
+                          <input
+                            value={commentText[post.id] || ""}
+                            onChange={event => setCommentText(current => ({ ...current, [post.id]: event.target.value }))}
+                            onKeyDown={event => { if (event.key === "Enter") submitComment(post.id); }}
+                            placeholder="Write a comment..."
+                          />
+                          <button onClick={() => submitComment(post.id)}>Post</button>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </section>
+            </>
+          ) : (
+            <section className="community-empty-tab">
+              <div className="community-empty-icon">{(() => { const Icon = tabConfig.find(item => item[0] === activeTab)?.[1] || MessageCircle; return <Icon size={28}/>; })()}</div>
+              <h2>{emptyCopy[activeTab]?.[0]}</h2>
+              <p>{emptyCopy[activeTab]?.[1]}</p>
+              {activeTab === "tickets" && <button onClick={() => onNavigate?.("Find Tickets")}>Browse Tickets</button>}
+              {activeTab === "events" && <button onClick={() => setActiveTab("posts")}>Back to Posts</button>}
+            </section>
+          )}
+        </section>
+
+        <aside className="community-right">
+          <section className="community-side-card">
+            <h2>Community Info</h2>
+            <div className="community-info-row"><Users size={17}/><span>2,450 members</span></div>
+            <div className="community-info-row"><HeartHandshake size={17}/><span>Public community</span></div>
+            <div className="community-info-row"><Ticket size={17}/><span>Students</span></div>
+            <div className="community-info-row"><MapPin size={17}/><span>IIT Kharagpur, West Bengal, India</span></div>
+            <p>A community for current and former students of IIT Kharagpur. Discuss academics, campus life, travel, events and more.</p>
+          </section>
+
+          <section className="community-side-card">
+            <h2>Rules</h2>
+            <ol className="community-rules">
+              <li>Be respectful and kind.</li>
+              <li>No spam or irrelevant posts.</li>
+              <li>No fraudulent listings.</li>
+              <li>Keep discussions constructive.</li>
+              <li>Follow community guidelines.</li>
+            </ol>
+          </section>
+
+          <section className="community-side-card">
+            <div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={() => setActiveTab("events")}>View all</button></div>
+            <div className="community-event">
+              <div className="community-event-art">🎉</div>
+              <div><b>Kshitij 2026</b><small>24 – 26 Jan 2026</small><small>IIT Kharagpur</small></div>
+              <button onClick={() => showNotice("Event details will be connected later.")}>View Event</button>
+            </div>
+            <div className="community-event">
+              <div className="community-event-art">💡</div>
+              <div><b>Hackathon 2026</b><small>15 – 16 Feb 2026</small><small>IIT Kharagpur</small></div>
+              <button onClick={() => showNotice("Event details will be connected later.")}>View Event</button>
+            </div>
+          </section>
+
+          <section className="community-side-card">
+            <div className="community-side-title-row"><h2>Top Members</h2><button onClick={() => setActiveTab("members")}>View all</button></div>
+            {[["Rahul Sharma","234 posts"],["Priya Singh","189 posts"]].map(([member, meta], index) => (
+              <div className="community-member-row" key={member}>
+                <span className="community-member-avatar"><UserRound size={16}/></span>
+                <div><b>{member}</b><small>{meta}</small></div>
+                <button onClick={() => setFollowed(current => ({ ...current, [member]: !current[member] }))}>{followed[member] ? "Following" : "Follow"}</button>
+              </div>
+            ))}
+          </section>
+        </aside>
+      </div>
+      {notice && <div className="community-toast">{notice}</div>}
+    </main>
+  );
+}
+
 function Dashboard({ user, onLogout }) {
   const [activeNav, setActiveNav] = useState("Home");
   const [search, setSearch] = useState("");
@@ -704,6 +987,7 @@ function Dashboard({ user, onLogout }) {
   );
   if (activeNav === "Find Tickets") return <FindTicketsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Favorites") return <FavoritesPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
+  if (activeNav === "Communities") return <CommunitiesPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Create Listing") return <CreateListingPage activeSub="TRAIN" onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   const navItems = [
@@ -757,7 +1041,7 @@ function Dashboard({ user, onLogout }) {
             <div className="quick-grid">
               <button className="quick-card lavender" onClick={() => setActiveNav("Find Tickets")}><span><Ticket size={23} /></span><div><b>Find Tickets</b><small>Concerts, Movies, Trains</small></div><ArrowRight size={18} /></button>
               <button className="quick-card pink" onClick={() => setActiveNav("Find People")}><span><Users size={23} /></span><div><b>Find People</b><small>Roommates, Friends</small></div><ArrowRight size={18} /></button>
-              <button className="quick-card green"><span><Users size={23} /></span><div><b>Explore Communities</b><small>Join groups & interests</small></div><ArrowRight size={18} /></button>
+              <button className="quick-card green" onClick={() => setActiveNav("Communities")}><span><Users size={23} /></span><div><b>Explore Communities</b><small>Join groups & interests</small></div><ArrowRight size={18} /></button>
               <button className="quick-card yellow" onClick={() => setActiveNav("Create Listing")}><span><Plus size={23} /></span><div><b>Create a Listing</b><small>Sell or find what you need</small></div><ArrowRight size={18} /></button>
             </div>
           </section>
@@ -818,8 +1102,8 @@ function Dashboard({ user, onLogout }) {
           <section className="side-card"><div className="section-heading"><h2>Suggested People</h2><button>View all</button></div>{suggested.map((person, index) => (
             <div className="suggested-row" key={person.name}><span className={`person-avatar small avatar-${index + 2}`}><UserRound size={16} /></span><div><b>{person.name}</b><small>{person.meta}</small></div><button>Connect</button></div>
           ))}</section>
-          <section className="side-card"><div className="section-heading"><h2>Popular Communities</h2><button>View all</button></div>{communities.map((community, index) => (
-            <div className="community-row" key={community.name}><span className={`community-icon community-${index + 1}`}>{community.icon}</span><div><b>{community.name}</b><small>{community.count}</small></div><button>Join</button></div>
+          <section className="side-card"><div className="section-heading"><h2>Popular Communities</h2><button onClick={() => setActiveNav("Communities")}>View all</button></div>{communities.map((community, index) => (
+            <div className="community-row" key={community.name}><span className={`community-icon community-${index + 1}`}>{community.icon}</span><div><b>{community.name}</b><small>{community.count}</small></div><button onClick={() => setActiveNav("Communities")}>Join</button></div>
           ))}</section>
         </aside>
       </div>

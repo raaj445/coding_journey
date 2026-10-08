@@ -759,3 +759,10 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .community-member-role-tabs button.active{background:#fff;color:#6336ec;box-shadow:0 2px 7px #29234b12}
 .community-member-role-tabs button.active span{background:#eee8ff;color:#6336ec}
 @media(max-width:650px){.community-member-role-tabs{overflow-x:auto;flex-wrap:nowrap}.community-member-role-tabs button{white-space:nowrap}}
+
+.universal-listing-subnav{margin:0 10px 8px 34px;padding:4px 0 4px 9px;border-left:1px solid #ddd9eb;display:grid;gap:2px}
+.universal-listing-subitem{width:100%;display:flex;align-items:center;gap:8px;border:0;background:transparent;color:#77788b;border-radius:7px;padding:7px 8px;text-align:left;font:700 10px "Manrope";cursor:pointer;transition:.15s}
+.universal-listing-subitem:hover{background:#f5f2ff;color:#6336ec}
+.universal-listing-subitem.active{background:#eee8ff;color:#6336ec}
+.universal-listing-dot{width:5px;height:5px;border-radius:50%;background:#b7b3c8;flex:0 0 auto}
+.universal-listing-subitem.active .universal-listing-dot{background:#6336ec}

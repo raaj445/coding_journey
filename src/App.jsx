@@ -622,13 +622,17 @@ function FavoritesPage({ user, onBack, onNavigate, onLogout }) {
 function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
-  const [posts, setPosts] = useState([{id:1,name:"Rahul Sharma",role:"Student",time:"2h ago",text:"Anyone travelling from KGP to Kolkata this weekend? Looking for a confirmed train ticket for Saturday.",likes:12,comments:8},{id:2,name:"Priya Singh",role:"Student",time:"5h ago",text:"KGP autumn fest lineup is out! Who’s excited? 🎉 Let’s plan a group if anyone is going.",likes:28,comments:15},{id:3,name:"Aman Verma",role:"Alumni",time:"8h ago",text:"Any good and affordable PG/hostel options near IIT Kharagpur for a friend?",likes:17,comments:6}]);
+  const [posts, setPosts] = useState([]);
+  const [communityMembers, setCommunityMembers] = useState([]);
+  const [commentsByPost, setCommentsByPost] = useState({});
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const [activeCommunityTab, setActiveCommunityTab] = useState("Posts");
   const [likedPosts,setLikedPosts]=useState({}); const [bookmarkedPosts,setBookmarkedPosts]=useState({}); const [commentOpen,setCommentOpen]=useState({}); const [postText,setPostText]=useState("");
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [joined, setJoined] = useState({ "IIT Kharagpur": true });
   const [notice, setNotice] = useState("");
-  const [form, setForm] = useState({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"" });
+  const [form, setForm] = useState({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"", coverFile:null, iconFile:null });
   const [coverPreview, setCoverPreview] = useState("");
   const [iconPreview, setIconPreview] = useState("");
   const [myCommunityIds, setMyCommunityIds] = useState([]);
@@ -654,12 +658,20 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     (async () => {
       if (!supabase) return;
       const { data } = await supabase.from("communities").select("*").order("created_at",{ascending:false});
-      if (!alive || !data?.length) return;
-      setCommunityCards(data.map(row => ({ id:row.id, ownerId:row.owner_id, name:row.name, category:row.category, members:"0", privacy:row.privacy, desc:row.description, image:row.cover_url || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85", icon:row.icon_url ? "" : "👥", state:row.state, city:row.city })));
+      if (!alive) return;
+      if (data?.length) {
+        const cards = await Promise.all(data.map(async row => {
+          const { count } = await supabase.from("community_members").select("*",{count:"exact",head:true}).eq("community_id",row.id);
+          return { id:row.id, ownerId:row.owner_id, name:row.name, category:row.category, members:String(count ?? 0), privacy:row.privacy, desc:row.description, image:row.cover_url || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85", icon:row.icon_url || "👥", state:row.state, city:row.city, rules:row.rules, createdAt:row.created_at };
+        }));
+        setCommunityCards(cards);
+      }
       if (user?.id) {
         const { data: memberships } = await supabase.from("community_members").select("community_id,role").eq("user_id",user.id);
-        setMyCommunityIds((memberships||[]).filter(m=>m.role==="OWNER").map(m=>m.community_id));
-        setJoinedCommunityIds((memberships||[]).map(m=>m.community_id));
+        if (alive) {
+          setMyCommunityIds((memberships||[]).filter(m=>m.role==="OWNER").map(m=>m.community_id));
+          setJoinedCommunityIds((memberships||[]).map(m=>m.community_id));
+        }
       }
     })();
     return () => { alive = false; };
@@ -667,19 +679,42 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
 
   useEffect(() => {
     if (!selectedCommunity?.id || !supabase) return;
+    setActiveCommunityTab("Posts");
     (async () => {
-      const { data } = await supabase.from("community_posts").select("*").eq("community_id",selectedCommunity.id).order("created_at",{ascending:false});
-      if (!data) return;
-      const enriched = await Promise.all(data.map(async p => {
-        const [{count:likes},{count:comments}] = await Promise.all([
-          supabase.from("community_post_likes").select("*",{count:"exact",head:true}).eq("post_id",p.id),
-          supabase.from("community_comments").select("*",{count:"exact",head:true}).eq("post_id",p.id)
-        ]);
-        return {id:p.id,name:p.author_name,role:p.author_role,time:new Date(p.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),text:p.body,likes:likes||0,comments:comments||0,avatar:p.author_avatar_url};
-      }));
-      setPosts(enriched);
+      const [{data:postRows},{data:memberRows}] = await Promise.all([
+        supabase.from("community_posts").select("*").eq("community_id",selectedCommunity.id).order("created_at",{ascending:false}),
+        supabase.from("community_members").select("*").eq("community_id",selectedCommunity.id).order("joined_at",{ascending:true})
+      ]);
+      if (!postRows) return;
+      setCommunityMembers(memberRows || []);
+      const ids = postRows.map(p=>p.id);
+      if (!ids.length) {
+        setPosts([]);
+        setLikedPosts({});
+        setBookmarkedPosts({});
+        setCommentsByPost({});
+        return;
+      }
+      const [enrichedRows,likedRows,bookmarkedRows,commentRows] = await Promise.all([
+        Promise.all(postRows.map(async p => {
+          const [{count:likes},{count:comments}] = await Promise.all([
+            supabase.from("community_post_likes").select("*",{count:"exact",head:true}).eq("post_id",p.id),
+            supabase.from("community_comments").select("*",{count:"exact",head:true}).eq("post_id",p.id)
+          ]);
+          return {id:p.id,name:p.author_name,role:p.author_role,time:new Date(p.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),text:p.body,likes:likes||0,comments:comments||0,avatar:p.author_avatar_url};
+        })),
+        user?.id ? supabase.from("community_post_likes").select("post_id").in("post_id",ids).eq("user_id",user.id) : Promise.resolve({data:[]}),
+        user?.id ? supabase.from("community_post_bookmarks").select("post_id").in("post_id",ids).eq("user_id",user.id) : Promise.resolve({data:[]}),
+        supabase.from("community_comments").select("*").in("post_id",ids).order("created_at",{ascending:true})
+      ]);
+      setPosts(enrichedRows);
+      setLikedPosts(Object.fromEntries((likedRows.data||[]).map(x=>[x.post_id,true])));
+      setBookmarkedPosts(Object.fromEntries((bookmarkedRows.data||[]).map(x=>[x.post_id,true])));
+      const grouped={};
+      (commentRows.data||[]).forEach(c=>{(grouped[c.post_id] ||= []).push(c);});
+      setCommentsByPost(grouped);
     })();
-  }, [selectedCommunity?.id]);
+  }, [selectedCommunity?.id,user?.id]);
   const filtered = communityCards.filter(item =>
     (category === "All" || item.category === category) &&
     (!search.trim() || (item.name+" "+item.desc+" "+item.category).toLowerCase().includes(search.toLowerCase()))
@@ -691,24 +726,38 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     window.__connectHubCommunityNotice = window.setTimeout(() => setNotice(""), 2200);
   }
 
-  function handleFile(event, setter) {
+  function handleFile(event, setter, field) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const max = field==="coverFile" ? 5*1024*1024 : 2*1024*1024;
+    if (file.size > max) { showNotice("Image is too large."); return; }
     setter(URL.createObjectURL(file));
+    setForm(v=>({...v,[field]:file}));
+  }
+
+  async function uploadCommunityImage(file, kind) {
+    if (!file || !supabase || !user?.id) return "";
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = user.id + "/" + kind + "-" + Date.now() + "-" + Math.random().toString(36).slice(2) + "." + ext;
+    const { error } = await supabase.storage.from("community-media").upload(path,file,{upsert:false,contentType:file.type});
+    if (error) { showNotice(error.message || "Image upload failed."); return ""; }
+    return supabase.storage.from("community-media").getPublicUrl(path).data.publicUrl;
   }
 
   async function createCommunity() {
     if (!form.name.trim() || !form.type || !form.description.trim()) { showNotice("Please complete the required fields."); return; }
     if (!supabase || !user?.id) { showNotice("Please sign in to create a community."); return; }
+    const coverUrl = coverPreview?.startsWith("blob:") ? await uploadCommunityImage(form.coverFile,"cover") : (coverPreview||null);
+    const iconUrl = iconPreview?.startsWith("blob:") ? await uploadCommunityImage(form.iconFile,"icon") : (iconPreview||null);
     const { data, error } = await supabase.from("communities").insert({
       owner_id:user.id,name:form.name.trim(),category:form.type,description:form.description.trim(),
-      state:form.state||null,city:form.city||null,privacy:form.privacy,cover_url:coverPreview||null,icon_url:iconPreview||null,rules:form.rules||null
+      state:form.state||null,city:form.city||null,privacy:form.privacy,cover_url:coverUrl,icon_url:iconUrl,rules:form.rules||null
     }).select("*").single();
     if (error) { showNotice(error.message || "Could not create community."); return; }
     const created={id:data.id,ownerId:user.id,name:data.name,category:data.category,members:"1",privacy:data.privacy,desc:data.description,image:data.cover_url||"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85",icon:data.icon_url?"":"👥",state:data.state,city:data.city};
     setCommunityCards(current=>[created,...current]); setJoined(current=>({...current,[created.name]:true})); setMyCommunityIds(current=>[created.id,...current]); setJoinedCommunityIds(current=>[created.id,...current]);
     showNotice("Community created successfully."); setCreateOpen(false);
-    setForm({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"" });
+    setForm({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"", coverFile:null, iconFile:null });
     setCoverPreview("");
     setIconPreview("");
   }
@@ -731,7 +780,29 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     if (!error) setJoined(v=>({...v,[community.name]:true})); else showNotice(error.message);
   }
 
-  async function addPost(){if(!postText.trim()){showNotice("Write something before posting.");return;}setPosts(v=>[{id:Date.now(),name:currentName,role:"Member",time:"Just now",text:postText.trim(),likes:0,comments:0},...v]);setPostText("");showNotice("Post added.");}
+  async function addPost(){
+    if(!postText.trim()){showNotice("Write something before posting.");return;}
+    if(!supabase || !user?.id || !selectedCommunity?.id){showNotice("Please open a real community before posting.");return;}
+    const isOwner = selectedCommunity.ownerId===user.id || myCommunityIds.includes(selectedCommunity.id);
+    const {data,error}=await supabase.from("community_posts").insert({
+      community_id:selectedCommunity.id,author_id:user.id,author_name:currentName,author_role:isOwner?"OWNER":"MEMBER",author_avatar_url:avatar||null,body:postText.trim()
+    }).select("*").single();
+    if(error){showNotice(error.message||"Could not publish post.");return;}
+    setPosts(v=>[{id:data.id,name:data.author_name,role:data.author_role,time:new Date(data.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),text:data.body,likes:0,comments:0,avatar:data.author_avatar_url},...v]);
+    setPostText("");showNotice("Post published.");
+  }
+  async function addComment(postId){
+    const body=(commentDrafts[postId]||"").trim();
+    if(!body){showNotice("Write a comment first.");return;}
+    if(!supabase || !user?.id || typeof postId!=="string"){showNotice("Comments are available on published posts.");return;}
+    const {data,error}=await supabase.from("community_comments").insert({post_id:postId,author_id:user.id,author_name:currentName,author_avatar_url:avatar||null,body}).select("*").single();
+    if(error){showNotice(error.message||"Could not add comment.");return;}
+    setCommentsByPost(v=>({...v,[postId]:[...(v[postId]||[]),data]}));
+    setPosts(v=>v.map(p=>p.id===postId?{...p,comments:p.comments+1}:p));
+    setCommentDrafts(v=>({...v,[postId]:""}));
+    showNotice("Comment added.");
+  }
+
   async function toggleLike(id){
     const was=!!likedPosts[id]; setLikedPosts(v=>({...v,[id]:!was}));
     if(supabase && typeof id==="string"){
@@ -752,11 +823,17 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     <header className="community-topbar"><button className="community-brand" onClick={()=>setSelectedCommunity(null)}><span className="community-brand-mark"><Users size={19} fill="currentColor"/></span><span>Connect<span>Hub</span></span></button><div className="community-search"><Search size={17}/><input placeholder="Search communities, posts, or topics..."/></div><div className="community-top-actions"><button onClick={()=>onNavigate?.("Favorites")}><Heart size={20}/></button><button><MessageCircle size={20}/></button><button className="community-notification"><Bell size={19}/><i/></button><button className="community-profile-mini"><span>{avatar?<img src={avatar} alt=""/>:<UserRound size={17}/>}</span><b>{currentName.split(" ")[0]}</b><ChevronDown size={15}/></button></div></header>
     <div className="community-layout"><UniversalSidebar activeNav="Communities" onNavigate={onNavigate} onLogout={onLogout}/><section className="community-main">
       <button className="community-back-dashboard" onClick={()=>setSelectedCommunity(null)}><ArrowRight size={17} style={{transform:"rotate(180deg)"}}/> Back to Community Dashboard</button>
-      <div className="community-cover"><div className="community-cover-art" style={{backgroundImage:"url("+community.image+")",backgroundSize:"cover",backgroundPosition:"center"}}></div><div className="community-header-card"><div className="community-logo">{community.icon}</div><div className="community-title-block"><h1>{community.name}</h1><p>{community.members} members <span>•</span> {community.privacy} <span>•</span> {community.category}</p><small>{community.desc}</small></div><div className="community-header-actions">{(() => { const isOwner = community.ownerId === user?.id || myCommunityIds.includes(community.id); const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id); return <button className={isOwner ? "community-join owner" : isMember ? "community-join joined" : "community-join"} onClick={()=>isOwner ? showNotice("This is your community.") : joinCommunity(community)}>{isOwner ? "★  My Community" : isMember ? "✓ Joined" : "Join Community"}</button>; })()}<button className="community-more">•••</button></div></div><nav className="community-tabs">{["Posts","About","Members","Events","Tickets"].map((tab,i)=><button key={tab} className={i===0?"active":""} onClick={()=>i?showNotice("No "+tab.toLowerCase()+" available yet."):null}>{tab}</button>)}</nav></div>
-      <section className="community-composer"><div className="community-composer-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-composer-body"><textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder={"Write something to the community, "+currentName.split(" ")[0]+"..."} rows={2}/><div className="community-composer-actions"><div><button onClick={()=>showNotice("Image posting will be connected next.")}>＋ Image</button><button onClick={()=>showNotice("Polls will be connected next.")}>▥ Poll</button><button onClick={()=>showNotice("Tagging will be connected next.")}>⌑ Tag</button></div><button className="community-post-button" onClick={addPost}>Post</button></div></div></section>
-      <div className="community-feed-filter"><button className="active">Latest</button><button onClick={()=>showNotice("Popular sorting will be connected next.")}>Popular</button><button onClick={()=>showNotice("Following posts will be connected next.")}>Following</button></div>
-      <section className="community-feed">{posts.map(post=><article className="community-post" key={post.id}><div className="community-post-avatar"><UserRound size={18}/></div><div className="community-post-body"><div className="community-post-head"><div><b>{post.name}</b><span>{post.role}</span><small>• {post.time}</small></div><button>•••</button></div><p className="community-post-text">{post.text}</p><div className="community-post-actions"><button className={likedPosts[post.id]?"active like":""} onClick={()=>toggleLike(post.id)}><Heart size={17} fill={likedPosts[post.id]?"currentColor":"none"}/>{post.likes}</button><button className={commentOpen[post.id]?"active":""} onClick={()=>setCommentOpen(v=>({...v,[post.id]:!v[post.id]}))}><MessageCircle size={17}/>{post.comments}</button><button className={bookmarkedPosts[post.id]?"active bookmark":""} onClick={()=>toggleBookmark(post.id)}><Bookmark size={17} fill={bookmarkedPosts[post.id]?"currentColor":"none"}/></button></div>{commentOpen[post.id]&&<div className="community-comment-box"><div className="community-comment-avatar"><UserRound size={15}/></div><input placeholder="Write a comment..." onKeyDown={async e=>{if(e.key==="Enter"){if(supabase && typeof post.id==="string"){const {error}=await supabase.from("community_comments").insert({post_id:post.id,author_id:user.id,author_name:currentName,author_avatar_url:avatar||null,body:e.currentTarget.value.trim()});if(error){showNotice(error.message);return;}}setPosts(v=>v.map(p=>p.id===post.id?{...p,comments:p.comments+1}:p));e.currentTarget.value="";setCommentOpen(v=>({...v,[post.id]:false}));showNotice("Comment added.");}}}/><button onClick={()=>showNotice("Comment added.")}>Post</button></div>}</div></article>)}</section>
-    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p></section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}</main>);}
+      <div className="community-cover"><div className="community-cover-art" style={{backgroundImage:"url("+community.image+")",backgroundSize:"cover",backgroundPosition:"center"}}></div><div className="community-header-card"><div className="community-logo">{community.icon}</div><div className="community-title-block"><h1>{community.name}</h1><p>{community.members} members <span>•</span> {community.privacy} <span>•</span> {community.category}</p><small>{community.desc}</small></div><div className="community-header-actions">{(() => { const isOwner = community.ownerId === user?.id || myCommunityIds.includes(community.id); const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id); return <button className={isOwner ? "community-join owner" : isMember ? "community-join joined" : "community-join"} onClick={()=>isOwner ? showNotice("This is your community.") : joinCommunity(community)}>{isOwner ? "★  My Community" : isMember ? "✓ Joined" : "Join Community"}</button>; })()}<button className="community-more">•••</button></div></div><nav className="community-tabs">{["Posts","About","Members","Events","Tickets"].map(tab=><button key={tab} className={activeCommunityTab===tab?"active":""} onClick={()=>setActiveCommunityTab(tab)}>{tab}</button>)}</nav></div>
+      {activeCommunityTab==="Posts" && <>
+      <section className="community-composer"><div className="community-composer-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-composer-body"><textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder={"Write something to the community, "+currentName.split(" ")[0]+"..."} rows={2}/><div className="community-composer-actions"><div><button onClick={()=>showNotice("Image posting will be connected in V2.2.")}>＋ Image</button><button onClick={()=>showNotice("Polls will be connected in V2.2.")}>▥ Poll</button><button onClick={()=>showNotice("Tagging will be connected in V2.2.")}>⌑ Tag</button></div><button className="community-post-button" onClick={addPost}>Post</button></div></div></section>
+      <div className="community-feed-filter"><button className="active">Latest</button><button onClick={()=>showNotice("Popular sorting will be connected in V2.2.")}>Popular</button><button onClick={()=>showNotice("Following will be connected in V2.2.")}>Following</button></div>
+      <section className="community-feed">{posts.map(post=><article className="community-post" key={post.id}><div className="community-post-avatar">{post.avatar?<img src={post.avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-post-body"><div className="community-post-head"><div><b>{post.name}</b><span>{post.role}</span><small>• {post.time}</small></div><button>•••</button></div><p className="community-post-text">{post.text}</p><div className="community-post-actions"><button className={likedPosts[post.id]?"active like":""} onClick={()=>toggleLike(post.id)}><Heart size={17} fill={likedPosts[post.id]?"currentColor":"none"}/>{post.likes}</button><button className={commentOpen[post.id]?"active":""} onClick={()=>setCommentOpen(v=>({...v,[post.id]:!v[post.id]}))}><MessageCircle size={17}/>{post.comments}</button><button className={bookmarkedPosts[post.id]?"active bookmark":""} onClick={()=>toggleBookmark(post.id)}><Bookmark size={17} fill={bookmarkedPosts[post.id]?"currentColor":"none"}/></button></div>{commentOpen[post.id]&&<div className="community-comment-wrap">{(commentsByPost[post.id]||[]).map(c=><div className="community-comment-item" key={c.id}><div className="community-comment-avatar">{c.author_avatar_url?<img src={c.author_avatar_url} alt=""/>:<UserRound size={15}/>}</div><div><b>{c.author_name}</b><p>{c.body}</p></div></div>)}<div className="community-comment-box"><div className="community-comment-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={15}/>}</div><input value={commentDrafts[post.id]||""} placeholder="Write a comment..." onChange={e=>setCommentDrafts(v=>({...v,[post.id]:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();addComment(post.id);}}}/><button onClick={()=>addComment(post.id)}>Post</button></div></div>}</div></article>)}</section>
+      </>}
+      {activeCommunityTab==="About" && <section className="community-detail-panel"><div className="community-detail-card"><h2>About this community</h2><p>{community.desc || "No description added yet."}</p><div className="community-about-grid"><div><span>Category</span><b>{community.category}</b></div><div><span>Privacy</span><b>{community.privacy}</b></div><div><span>Location</span><b>{community.city ? community.city+", "+community.state : "Not specified"}</b></div><div><span>Created</span><b>{community.createdAt ? new Date(community.createdAt).toLocaleDateString() : "—"}</b></div></div><h3>Community Rules</h3><ol className="community-rules">{(community.rules||"Be respectful and kind.").split(/\\n|\n/).filter(Boolean).map((r,i)=><li key={i}>{r}</li>)}</ol></div></section>}
+      {activeCommunityTab==="Members" && <section className="community-detail-panel"><div className="community-detail-card"><div className="community-detail-head"><div><h2>Members</h2><p>{communityMembers.length} members</p></div><input placeholder="Search members..." /></div><div className="community-members-list">{communityMembers.map(m=><div className="community-member-item" key={m.id}><div className="community-member-avatar">{m.avatar_url?<img src={m.avatar_url} alt=""/>:<UserRound size={16}/>}</div><div><b>{m.username || "Member"}</b><small>{m.role}</small></div>{m.role==="OWNER"&&<em>Owner</em>}</div>)}</div>{!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}</div></section>}
+      {activeCommunityTab==="Events" && <section className="community-empty-tab"><div className="community-empty-icon">🎉</div><h2>No events yet</h2><p>Community events will appear here. Event creation is planned for V2.2.</p></section>}
+      {activeCommunityTab==="Tickets" && <section className="community-empty-tab"><div className="community-empty-icon">🎟️</div><h2>No community tickets yet</h2><p>Ticket posts connected to this community will appear here in a later release.</p></section>}
+    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p></section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}</main>);}
   return (
     <main className="communities-discover-shell">
       <header className="community-topbar">
@@ -823,10 +900,10 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
               <label>Community Type *<select value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option value="">Select a category</option>{categories.slice(1).map(x=><option key={x}>{x}</option>)}</select></label>
               <label>Description *<textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} maxLength={500} placeholder={"Tell people what this community is about...\n(e.g. discussions, events, ticket sharing, etc.)"} /><small>{form.description.length}/500</small></label>
               <label>Cover Image <span className="optional">(Optional)</span>
-                <label className="create-upload-box">{coverPreview ? <img src={coverPreview} alt="" /> : <><span>▧</span><b>Upload a cover image</b><small>JPG, PNG up to 5MB</small></>}<input type="file" accept="image/png,image/jpeg" onChange={e=>handleFile(e,setCoverPreview)} /></label>
+                <label className="create-upload-box">{coverPreview ? <img src={coverPreview} alt="" /> : <><span>▧</span><b>Upload a cover image</b><small>JPG, PNG up to 5MB</small></>}<input type="file" accept="image/png,image/jpeg" onChange={e=>handleFile(e,setCoverPreview,"coverFile")} /></label>
               </label>
               <label>Community Icon <span className="optional">(Optional)</span>
-                <label className="create-icon-upload"><span>{iconPreview ? <img src={iconPreview} alt="" /> : "▧"}</span><div><b>Upload community icon</b><small>JPG, PNG up to 2MB</small></div><input type="file" accept="image/png,image/jpeg" onChange={e=>handleFile(e,setIconPreview)} /></label>
+                <label className="create-icon-upload"><span>{iconPreview ? <img src={iconPreview} alt="" /> : "▧"}</span><div><b>Upload community icon</b><small>JPG, PNG up to 2MB</small></div><input type="file" accept="image/png,image/jpeg" onChange={e=>handleFile(e,setIconPreview,"iconFile")} /></label>
               </label>
               <label>Location <span className="optional">(Optional)</span><div className="create-location-row"><select value={form.state} onChange={e=>setForm({...form,state:e.target.value,city:""})}><option value="">Select State</option>{states.map(x=><option key={x}>{x}</option>)}</select><select value={form.city} onChange={e=>setForm({...form,city:e.target.value})} disabled={!form.state}><option value="">Select City</option>{(citiesByState[form.state]||[]).map(x=><option key={x}>{x}</option>)}</select></div></label>
               <fieldset className="create-privacy"><legend>Community Privacy *</legend><label><input type="radio" checked={form.privacy==="Public"} onChange={()=>setForm({...form,privacy:"Public"})}/><span><b>Public</b><small>Anyone can find and join this community.</small></span></label><label><input type="radio" checked={form.privacy==="Private"} onChange={()=>setForm({...form,privacy:"Private"})}/><span><b>Private</b><small>Members need approval to join.</small></span></label></fieldset>

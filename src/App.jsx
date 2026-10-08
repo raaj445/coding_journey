@@ -1056,6 +1056,49 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     }
     showNotice(was?"Removed from bookmarks.":"Saved to bookmarks.");
   }
+  const leaveModal = leaveModalOpen && leaveCommunityTarget ? (
+    <div className="community-modal-backdrop" onMouseDown={e=>{
+      if(e.target===e.currentTarget&&!leavingCommunity){
+        setLeaveModalOpen(false);
+        setLeaveCommunityTarget(null);
+      }
+    }}>
+      <div className="community-leave-modal">
+        <button type="button" className="community-modal-close" onClick={()=>{
+          if(!leavingCommunity){
+            setLeaveModalOpen(false);
+            setLeaveCommunityTarget(null);
+          }
+        }}><X size={17}/></button>
+        {leaveStep==="confirm" ? <>
+          <div className="community-modal-icon danger">↪</div>
+          <h2>Leave {leaveCommunityTarget.name}?</h2>
+          <p>You will lose access to community posts, members and discussions until you join again.</p>
+          <div className="community-modal-actions">
+            <button type="button" onClick={()=>{setLeaveModalOpen(false);setLeaveCommunityTarget(null);}}>Stay</button>
+            <button type="button" className="danger" onClick={()=>setLeaveStep("feedback")}>Continue</button>
+          </div>
+        </> : <>
+          <div className="community-modal-icon">★</div>
+          <h2>How was your experience?</h2>
+          <p>Your feedback is optional and helps improve this community.</p>
+          <div className="community-rating-input">
+            {[1,2,3,4,5].map(star=><button type="button" key={star} className={star<=leaveRating?"active":""} onClick={()=>setLeaveRating(star)} aria-label={star+" star"}>
+              <Star size={28} fill={star<=leaveRating?"currentColor":"none"}/>
+            </button>)}
+          </div>
+          <textarea value={leaveReview} onChange={e=>setLeaveReview(e.target.value)} maxLength={500} placeholder="Optional feedback..."/>
+          <small className="community-review-count">{leaveReview.length}/500</small>
+          <div className="community-modal-actions stacked">
+            <button type="button" onClick={()=>submitLeaveCommunity(false)} disabled={leavingCommunity}>Skip & Leave</button>
+            <button type="button" className="primary" onClick={()=>submitLeaveCommunity(true)} disabled={leavingCommunity||!leaveRating}>
+              {leavingCommunity?"Leaving...":"Submit & Leave"}
+            </button>
+          </div>
+        </>}
+      </div>
+    </div>
+  )
   if(selectedCommunity){
     const community=selectedCommunity;
     const currentMember=communityMembers.find(m=>m.user_id===user?.id);
@@ -1095,7 +1138,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       {!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No members in this category.</div>}
       </div></section>}{activeCommunityTab==="Events" && <section className="community-empty-tab"><div className="community-empty-icon">🎉</div><h2>No events yet</h2><p>Community events will appear here. Event creation is planned for V2.2.</p></section>}
       {activeCommunityTab==="Tickets" && <section className="community-empty-tab"><div className="community-empty-icon">🎟️</div><h2>No community tickets yet</h2><p>Ticket posts connected to this community will appear here in a later release.</p></section>}
-    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}</main>);}
+    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}      {leaveModal}
+    </main>);}
   return (
     <main className="communities-discover-shell">
       <header className="community-topbar">
@@ -1176,7 +1220,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
         )}
       </div>
       {notice && <div className="community-toast">{notice}</div>}
-      {leaveModalOpen && <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!leavingCommunity){setLeaveModalOpen(false);setLeaveCommunityTarget(null);}}}><div className="community-leave-modal"><button type="button" className="community-modal-close" onClick={()=>{if(!leavingCommunity){setLeaveModalOpen(false);setLeaveCommunityTarget(null);}}}><X size={17}/></button>{leaveStep==="confirm"?<><div className="community-modal-icon danger">↪</div><h2>Leave {leaveCommunityTarget?.name || community.name}?</h2><p>You will lose access to community posts, members and discussions until you join again.</p><div className="community-modal-actions"><button type="button" onClick={()=>{setLeaveModalOpen(false);setLeaveCommunityTarget(null);}}>Stay</button><button type="button" className="danger" onClick={()=>setLeaveStep("feedback")}>Continue</button></div></>:<><div className="community-modal-icon">★</div><h2>How was your experience?</h2><p>Your feedback is optional and helps improve this community.</p><div className="community-rating-input">{[1,2,3,4,5].map(star=><button type="button" key={star} className={star<=leaveRating?"active":""} onClick={()=>setLeaveRating(star)} aria-label={star+" star"}><Star size={28} fill={star<=leaveRating?"currentColor":"none"}/></button>)}</div><textarea value={leaveReview} onChange={e=>setLeaveReview(e.target.value)} maxLength={500} placeholder="Optional feedback..."/><small className="community-review-count">{leaveReview.length}/500</small><div className="community-modal-actions stacked"><button type="button" onClick={()=>submitLeaveCommunity(false)} disabled={leavingCommunity}>Skip & Leave</button><button type="button" className="primary" onClick={()=>submitLeaveCommunity(true)} disabled={leavingCommunity||!leaveRating}>{leavingCommunity?"Leaving...":"Submit & Leave"}</button></div></>}</div></div>}
+      {leaveModal}
+
     </main>
   );
 }

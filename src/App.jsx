@@ -755,7 +755,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       state:form.state||null,city:form.city||null,privacy:form.privacy,cover_url:coverUrl,icon_url:iconUrl,rules:form.rules||null
     }).select("*").single();
     if (error) { showNotice(error.message || "Could not create community."); return; }
-    const created={id:data.id,ownerId:user.id,name:data.name,category:data.category,members:"1",privacy:data.privacy,desc:data.description,image:data.cover_url||"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85",icon:data.icon_url?"":"👥",state:data.state,city:data.city};
+    const created={id:data.id,ownerId:user.id,name:data.name,category:data.category,members:"1",privacy:data.privacy,desc:data.description,image:data.cover_url||"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85",icon:data.icon_url||"👥",state:data.state,city:data.city};
     setCommunityCards(current=>[created,...current]); setJoined(current=>({...current,[created.name]:true})); setMyCommunityIds(current=>[created.id,...current]); setJoinedCommunityIds(current=>[created.id,...current]);
     showNotice("Community created successfully."); setCreateOpen(false);
     setForm({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"", coverFile:null, iconFile:null });

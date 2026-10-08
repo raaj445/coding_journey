@@ -752,6 +752,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       .channel("community-v22-" + selectedCommunity.id)
       .on("postgres_changes",{event:"*",schema:"public",table:"community_posts",filter:"community_id=eq."+selectedCommunity.id},()=>setCommunityRefreshTick(v=>v+1))
       .on("postgres_changes",{event:"*",schema:"public",table:"community_members",filter:"community_id=eq."+selectedCommunity.id},()=>setCommunityRefreshTick(v=>v+1))
+      .on("postgres_changes",{event:"*",schema:"public",table:"community_join_requests",filter:"community_id=eq."+selectedCommunity.id},()=>setCommunityRefreshTick(v=>v+1))
       .on("postgres_changes",{event:"*",schema:"public",table:"community_comments"},payload=>{
         const postId=payload.new?.post_id || payload.old?.post_id;
         if(postId && posts.some(p=>p.id===postId)) setCommunityRefreshTick(v=>v+1);

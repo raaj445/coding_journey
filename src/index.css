@@ -778,3 +778,50 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .notifications-page-content{max-width:900px;width:100%;margin:0 auto;padding:30px 32px 60px}.notifications-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}.notifications-heading span{font:800 9px "Manrope";letter-spacing:1.3px;color:#7650e8}.notifications-heading h1{margin:5px 0 4px;font:800 28px "Manrope";color:#24253d}.notifications-heading p{margin:0;color:#858697;font-size:11px}.notifications-heading>button{display:flex;align-items:center;gap:6px;border:1px solid #ddd9e8;background:#fff;color:#6336ec;border-radius:8px;padding:9px 12px;font:800 10px "Manrope";cursor:pointer}
 .notifications-card{margin-top:24px;background:#fff;border:1px solid #e6e4ee;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px #29234b08}.notification-row{display:flex;gap:13px;padding:16px 18px;border-bottom:1px solid #eeeef3}.notification-row:last-child{border-bottom:0}.notification-row.unread{background:#f8f5ff}.notification-icon{width:34px;height:34px;border-radius:10px;background:#eee9ff;color:#6336ec;display:grid;place-items:center;flex:0 0 auto}.notification-row b{font:800 11px "Manrope";color:#292a42}.notification-row p{margin:4px 0 6px;color:#68697c;font-size:10px}.notification-row small{display:flex;align-items:center;gap:4px;color:#999aaa;font-size:8px}.notifications-empty{min-height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;color:#9293a2;font-size:10px}.notifications-empty b{font:800 12px "Manrope";color:#55566a}
 @media(max-width:800px){.notifications-page-shell{grid-template-columns:1fr}.notifications-page-shell>.universal-sidebar{display:none}.notifications-page-content{padding:22px 16px 45px}.notifications-heading{align-items:flex-start;flex-direction:column}}
+
+
+.community-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.community-share-button{border:1px solid #e0dceb;background:#fff;color:#5f5d72;border-radius:9px;padding:9px 12px;font:800 10px "Manrope";display:flex;align-items:center;gap:6px;cursor:pointer}
+.community-share-button:hover{border-color:#cfc5ef;color:#6336ec;background:#faf8ff}
+.community-leave-button{width:100%;margin-top:16px;border:1px solid #f0d6d6;background:#fff7f7;color:#b33e4a;border-radius:9px;padding:10px 12px;font:800 10px "Manrope";cursor:pointer}
+.community-leave-button:hover{background:#fff0f0;border-color:#e9bfc2}
+.community-review-summary{margin:24px 0;padding:16px;border:1px solid #ece9f4;background:#faf9fd;border-radius:13px;display:flex;align-items:center;gap:18px}
+.community-review-score{display:block;font:800 25px "Manrope";color:#2b2c43;line-height:1}
+.community-review-stars{display:flex;gap:2px;color:#f0a11a;margin:6px 0 3px}
+.community-review-summary small{font-size:9px;color:#8d8e9d}
+.community-review-copy{display:grid;gap:4px}
+.community-review-copy b{font:800 11px "Manrope";color:#303149}
+.community-review-copy span{font-size:9px;color:#858697}
+.community-review-list{display:grid;gap:10px;margin-bottom:24px}
+.community-review-item{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;padding:12px;border:1px solid #eeeef3;border-radius:11px;background:#fff}
+.community-review-avatar{width:32px;height:32px;border-radius:50%;background:#eee9ff;color:#6336ec;display:grid;place-items:center}
+.community-review-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.community-review-head b{font:800 10px "Manrope";color:#4b4c61}
+.community-review-head span{display:flex;gap:1px;color:#f0a11a}
+.community-review-item p{margin:6px 0;color:#67687a;font-size:10px;line-height:1.5}
+.community-review-item small{font-size:8px;color:#a0a1ae}
+.community-modal-backdrop{position:fixed;inset:0;background:#19172a66;display:grid;place-items:center;padding:18px;z-index:2000;backdrop-filter:blur(3px)}
+.community-leave-modal{width:min(440px,100%);background:#fff;border-radius:18px;box-shadow:0 25px 80px #18162c2b;padding:28px;position:relative;text-align:center}
+.community-modal-close{position:absolute;right:14px;top:14px;width:30px;height:30px;border:0;background:#f5f3f9;border-radius:50%;display:grid;place-items:center;color:#77788a;cursor:pointer}
+.community-modal-icon{width:48px;height:48px;border-radius:14px;background:#eee9ff;color:#6336ec;display:grid;place-items:center;margin:0 auto 14px;font-size:20px}
+.community-modal-icon.danger{background:#fff0f0;color:#b33e4a}
+.community-leave-modal h2{margin:0;color:#292a42;font:800 19px "Manrope"}
+.community-leave-modal>p{margin:8px auto 0;max-width:340px;color:#7e7f8f;font-size:10px;line-height:1.55}
+.community-modal-actions{display:flex;justify-content:center;gap:8px;margin-top:22px}
+.community-modal-actions.stacked{display:grid;grid-template-columns:1fr 1fr}
+.community-modal-actions button{border:1px solid #dedce7;background:#fff;color:#646578;border-radius:9px;padding:10px 15px;font:800 10px "Manrope";cursor:pointer}
+.community-modal-actions button.danger{background:#fff0f0;border-color:#f0d2d2;color:#b33e4a}
+.community-modal-actions button.primary{background:#6336ec;border-color:#6336ec;color:#fff}
+.community-modal-actions button:disabled{opacity:.55;cursor:not-allowed}
+.community-rating-input{display:flex;justify-content:center;gap:5px;margin:22px 0 14px;color:#d6d4df}
+.community-rating-input button{border:0;background:transparent;padding:2px;color:inherit;cursor:pointer}
+.community-rating-input button.active{color:#f0a11a}
+.community-leave-modal textarea{width:100%;box-sizing:border-box;min-height:92px;border:1px solid #dedce7;border-radius:10px;padding:11px 12px;resize:vertical;font:500 11px "DM Sans";outline:none;color:#33344a}
+.community-leave-modal textarea:focus{border-color:#8b6bea;box-shadow:0 0 0 3px #eee9ff}
+.community-review-count{display:block;text-align:right;color:#9a9baa;font-size:8px;margin-top:4px}
+@media(max-width:650px){
+  .community-header-actions{width:100%}
+  .community-share-button{flex:1;justify-content:center}
+  .community-review-summary{align-items:flex-start}
+  .community-modal-actions.stacked{grid-template-columns:1fr}
+}

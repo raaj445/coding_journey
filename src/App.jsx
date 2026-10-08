@@ -631,6 +631,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [form, setForm] = useState({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"" });
   const [coverPreview, setCoverPreview] = useState("");
   const [iconPreview, setIconPreview] = useState("");
+  const [myCommunityIds, setMyCommunityIds] = useState([]);
+  const [joinedCommunityIds, setJoinedCommunityIds] = useState([]);
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
   const [communityCards, setCommunityCards] = useState([
@@ -653,7 +655,11 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       if (!supabase) return;
       const { data } = await supabase.from("communities").select("*").order("created_at",{ascending:false});
       if (!alive || !data?.length) return;
-      setCommunityCards(data.map(row => ({ id:row.id, name:row.name, category:row.category, members:"0", privacy:row.privacy, desc:row.description, image:row.cover_url || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85", icon:row.icon_url ? "" : "👥", state:row.state, city:row.city })));
+      setCommunityCards(data.map(row => ({ id:row.id, ownerId:row.owner_id, name:row.name, category:row.category, members:"0", privacy:row.privacy, desc:row.description, image:row.cover_url || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85", icon:row.icon_url ? "" : "👥", state:row.state, city:row.city })));\n      if (user?.id) {
+        const { data: memberships } = await supabase.from("community_members").select("community_id,role").eq("user_id",user.id);
+        setMyCommunityIds((memberships||[]).filter(m=>m.role==="OWNER").map(m=>m.community_id));
+        setJoinedCommunityIds((memberships||[]).map(m=>m.community_id));
+      }
     })();
     return () => { alive = false; };
   }, []);
@@ -698,8 +704,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       state:form.state||null,city:form.city||null,privacy:form.privacy,cover_url:coverPreview||null,icon_url:iconPreview||null,rules:form.rules||null
     }).select("*").single();
     if (error) { showNotice(error.message || "Could not create community."); return; }
-    const created={id:data.id,name:data.name,category:data.category,members:"1",privacy:data.privacy,desc:data.description,image:data.cover_url||"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85",icon:data.icon_url?"":"👥",state:data.state,city:data.city};
-    setCommunityCards(current=>[created,...current]); setJoined(current=>({...current,[created.name]:true}));
+    const created={id:data.id,ownerId:user.id,name:data.name,category:data.category,members:"1",privacy:data.privacy,desc:data.description,image:data.cover_url||"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85",icon:data.icon_url?"":"👥",state:data.state,city:data.city};
+    setCommunityCards(current=>[created,...current]); setJoined(current=>({...current,[created.name]:true})); setMyCommunityIds(current=>[created.id,...current]); setJoinedCommunityIds(current=>[created.id,...current]);
     showNotice("Community created successfully."); setCreateOpen(false);
     setForm({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"" });
     setCoverPreview("");
@@ -772,20 +778,23 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
           </div>
           <div className="communities-searchbar"><Search size={18}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search communities..." /></div>
           <div className="community-category-pills">{categories.map(item => <button key={item} className={category===item ? "active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
-          <div className="community-discover-grid">
-            {filtered.map(item => (
-              <article className="community-discover-card" key={item.name} onClick={(event)=>{if(event.target.closest("button"))return;setSelectedCommunity(item);}}>
-                <div className="community-card-cover" style={{backgroundImage:"url("+item.image+")"}}><div className="community-card-menu">•••</div></div>
-                <div className="community-card-content">
-                  <div className="community-card-icon">{item.icon}</div>
-                  <h2>{item.name}</h2>
-                  <p className="community-card-meta">{item.members} members <span>•</span> {item.privacy}</p>
-                  <p className="community-card-description">{item.desc}</p>
-                  <button className={joined[item.name] ? "community-card-join joined" : "community-card-join"} onClick={()=>setJoined(v=>({...v,[item.name]:!v}))}>{joined[item.name] ? "✓  Joined" : "Join Community"}</button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <div className="communities-dashboard-columns">
+            <div>
+              <div className="community-discover-grid">
+                {filtered.map(item => {
+                  const isOwner = item.ownerId === user?.id || myCommunityIds.includes(item.id);
+                  const isJoined = isOwner || joined[item.name] || joinedCommunityIds.includes(item.id);
+                  return <article className="community-discover-card" key={item.id || item.name} onClick={(event)=>{if(event.target.closest("button"))return;setSelectedCommunity(item);}}>
+                    <div className="community-card-cover" style={{backgroundImage:"url("+item.image+")"}}><div className="community-card-menu">•••</div></div>
+                    <div className="community-card-content">
+                      <div className="community-card-icon">{item.icon}</div><h2>{item.name}</h2>
+                      <p className="community-card-meta">{item.members} members <span>•</span> {item.privacy}</p>
+                      <p className="community-card-description">{item.desc}</p>
+                      <button className={isOwner ? "community-card-join owner" : isJoined ? "community-card-join joined" : "community-card-join"} onClick={()=>isOwner ? setSelectedCommunity(item) : joinCommunity(item)}>{isOwner ? "★  My Community" : isJoined ? "✓  Joined" : "Join Community"}</button>
+                    </div>
+                  </article>;
+                })}
+              </div>
           {!filtered.length && <div className="community-discover-empty"><Search size={28}/><b>No communities found</b><span>Try another search or category.</span></div>}
         </section>
 
@@ -1321,4 +1330,18 @@ export default function App() {
       </div>}
     </main>
   );
-}
+}          </div>
+            <aside className="communities-dashboard-right">
+              <section className="my-communities-card">
+                <div className="my-communities-head"><h2>My Communities</h2><button onClick={()=>showNotice("Showing all your communities.")}>View all <ArrowRight size={14}/></button></div>
+                <div className="my-community-tabs"><button className="active">Created by me ({communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).length})</button><button>Joined ({Math.max(0,joinedCommunityIds.filter(id=>!myCommunityIds.includes(id)).length)})</button></div>
+                <div className="my-community-list">
+                  {communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).slice(0,3).map(c=><button className="my-community-item" key={c.id||c.name} onClick={()=>setSelectedCommunity(c)}><div className="my-community-thumb" style={{backgroundImage:"url("+c.image+")"}}></div><div className="my-community-copy"><b>{c.name}</b><span>{c.members} members • {c.privacy}</span></div><em>Owner</em><span className="my-community-dots">•••</span></button>)}
+                  {!communityCards.some(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)) && <div className="my-community-empty">Create your first community and it will appear here.</div>}
+                </div>
+              </section>
+              <section className="my-activity-card"><h2>Your Community Activity</h2><div className="activity-stats"><div><b>{communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).length}</b><span>My Community</span></div><div><b>{Math.max(0,joinedCommunityIds.filter(id=>!myCommunityIds.includes(id)).length)}</b><span>Joined Communities</span></div><div><b>0</b><span>Posts</span></div><div><b>0</b><span>Likes Received</span></div></div></section>
+              <section className="recommended-community-card"><div className="my-communities-head"><h2>Recommended for You</h2><button>View all <ArrowRight size={14}/></button></div><div className="recommended-row"><span>🎓</span><div><b>Kharagpur Students</b><small>1,210 members</small></div><button>Join</button></div><div className="recommended-row"><span>🚆</span><div><b>Travel Buddies India</b><small>3,560 members</small></div><button>Join</button></div><div className="recommended-row"><span>🎓</span><div><b>MTech Aspirants</b><small>980 members</small></div><button>Join</button></div></section>
+            </aside>
+          </div>
+

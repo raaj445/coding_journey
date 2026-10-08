@@ -6,6 +6,7 @@ import ConcertTicketListingPage from "./ConcertTicketListingPage";
 import TrainArtwork from "./TrainArtwork";
 import FindTicketsPage from "./FindTicketsPage";
 import UniversalSidebar from "./UniversalSidebar";
+import ProfilePage from "./ProfilePage";
 
 const eventCards = [
   { title: "Concerts", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=700&q=85", icon: Music2 },
@@ -1152,6 +1153,7 @@ function Dashboard({ user, onLogout }) {
   );
   if (activeNav === "Find Tickets") return <FindTicketsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Favorites") return <FavoritesPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
+  if (activeNav === "Profile") return <ProfilePage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={onLogout} />;
   if (activeNav === "Communities") return <CommunitiesPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Create Listing") return <CreateListingPage activeSub="TRAIN" onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;

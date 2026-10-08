@@ -655,7 +655,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       if (!supabase) return;
       const { data } = await supabase.from("communities").select("*").order("created_at",{ascending:false});
       if (!alive || !data?.length) return;
-      setCommunityCards(data.map(row => ({ id:row.id, ownerId:row.owner_id, name:row.name, category:row.category, members:"0", privacy:row.privacy, desc:row.description, image:row.cover_url || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85", icon:row.icon_url ? "" : "👥", state:row.state, city:row.city })));\n      if (user?.id) {
+      setCommunityCards(data.map(row => ({ id:row.id, ownerId:row.owner_id, name:row.name, category:row.category, members:"0", privacy:row.privacy, desc:row.description, image:row.cover_url || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85", icon:row.icon_url ? "" : "👥", state:row.state, city:row.city })));
+      if (user?.id) {
         const { data: memberships } = await supabase.from("community_members").select("community_id,role").eq("user_id",user.id);
         setMyCommunityIds((memberships||[]).filter(m=>m.role==="OWNER").map(m=>m.community_id));
         setJoinedCommunityIds((memberships||[]).map(m=>m.community_id));

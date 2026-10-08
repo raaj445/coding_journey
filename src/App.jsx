@@ -858,13 +858,13 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
 
   async function handleJoinRequest(requestId,status){
     if(!supabase || !selectedCommunity?.id) return;
-    if(status==="ACCEPTED"){
-      const {data,error}=await supabase.rpc("accept_community_join_request",{p_request_id:requestId});
-      if(error || data!==true){showNotice(error?.message||"Could not accept request.");return;}
-    } else {
-      const {error}=await supabase.from("community_join_requests").update({status:"REJECTED"}).eq("id",requestId).eq("community_id",selectedCommunity.id);
-      if(error){showNotice(error.message||"Could not reject request.");return;}
+    const request=joinRequests.find(r=>r.id===requestId);
+    if(status==="ACCEPTED" && request){
+      const {error:memberError}=await supabase.from("community_members").insert({community_id:selectedCommunity.id,user_id:request.user_id,role:"MEMBER",username:request.requester_name||"Member",avatar_url:request.requester_avatar_url||null});
+      if(memberError && !/duplicate/i.test(memberError.message)){showNotice(memberError.message||"Could not add member.");return;}
     }
+    const {error}=await supabase.from("community_join_requests").update({status}).eq("id",requestId).eq("community_id",selectedCommunity.id);
+    if(error){showNotice(error.message||"Could not update request.");return;}
     setJoinRequests(v=>v.filter(r=>r.id!==requestId));
     setCommunityRefreshTick(v=>v+1);
     showNotice(status==="ACCEPTED"?"Join request accepted.":"Join request rejected.");

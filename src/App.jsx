@@ -1165,6 +1165,12 @@ function Dashboard({ user, onLogout }) {
   const [favoriteCount, setFavoriteCount] = useState(0);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("community")) {
+      setActiveNav("Communities");
+    }
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     async function loadMyListings() {
       if (!supabase || !user?.id) {

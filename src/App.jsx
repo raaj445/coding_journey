@@ -663,7 +663,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!selectedCommunity?.id || !supabase) return;

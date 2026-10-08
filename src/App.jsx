@@ -621,6 +621,9 @@ function FavoritesPage({ user, onBack, onNavigate, onLogout }) {
 
 function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [createOpen, setCreateOpen] = useState(false);
+  const [selectedCommunity, setSelectedCommunity] = useState(null);
+  const [posts, setPosts] = useState([{id:1,name:"Rahul Sharma",role:"Student",time:"2h ago",text:"Anyone travelling from KGP to Kolkata this weekend? Looking for a confirmed train ticket for Saturday.",likes:12,comments:8},{id:2,name:"Priya Singh",role:"Student",time:"5h ago",text:"KGP autumn fest lineup is out! Who’s excited? 🎉 Let’s plan a group if anyone is going.",likes:28,comments:15},{id:3,name:"Aman Verma",role:"Alumni",time:"8h ago",text:"Any good and affordable PG/hostel options near IIT Kharagpur for a friend?",likes:17,comments:6}]);
+  const [likedPosts,setLikedPosts]=useState({}); const [bookmarkedPosts,setBookmarkedPosts]=useState({}); const [commentOpen,setCommentOpen]=useState({}); const [postText,setPostText]=useState("");
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [joined, setJoined] = useState({ "IIT Kharagpur": true });
@@ -630,7 +633,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [iconPreview, setIconPreview] = useState("");
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
-  const communityCards = [
+  const [communityCards, setCommunityCards] = useState([
     { name:"IIT Kharagpur", category:"Students", members:"2,450", privacy:"Public", desc:"Discussions about academics, campus life, events, travel, and more.", image:"https://images.unsplash.com/photo-1592999620762-9e9f7f4f8f16?auto=format&fit=crop&w=900&q=85", icon:"🎓" },
     { name:"Indian Railways Travel", category:"Travel", members:"3,820", privacy:"Public", desc:"Train travel experiences, ticket sharing, travel tips, and more.", image:"https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=900&q=85", icon:"🚆" },
     { name:"Music & Concerts", category:"Events", members:"1,650", privacy:"Public", desc:"Discuss upcoming concerts, ticket resale, and event plans.", image:"https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=85", icon:"🎟️" },
@@ -640,7 +643,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     { name:"GATE Aspirants", category:"Students", members:"1,950", privacy:"Public", desc:"Preparation tips, resources, doubt discussions, and more.", image:"https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=85", icon:"🎓" },
     { name:"Sports & Events", category:"Events", members:"1,780", privacy:"Public", desc:"Cricket, football, matches, event tickets, and discussions.", image:"https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=900&q=85", icon:"🎟️" },
     { name:"Tech & Development", category:"Other", members:"2,340", privacy:"Public", desc:"Programming, projects, jobs, and technology discussions.", image:"https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=85", icon:"</>" },
-  ];
+  ]);
 
   const currentName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "You";
   const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
@@ -666,13 +669,25 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       showNotice("Please complete the required fields.");
       return;
     }
-    showNotice("Community form is ready. Database creation will be connected next.");
-    setCreateOpen(false);
+    const created={name:form.name.trim(),category:form.type,members:"1",privacy:form.privacy,desc:form.description.trim(),image:coverPreview||"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85",icon:"👥",state:form.state,city:form.city};
+    setCommunityCards(current=>[created,...current]); setJoined(current=>({...current,[created.name]:true}));
+    showNotice("Community created successfully in this session."); setCreateOpen(false);
     setForm({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"" });
     setCoverPreview("");
     setIconPreview("");
   }
 
+  function addPost(){if(!postText.trim()){showNotice("Write something before posting.");return;}setPosts(v=>[{id:Date.now(),name:currentName,role:"Member",time:"Just now",text:postText.trim(),likes:0,comments:0},...v]);setPostText("");showNotice("Post added.");}
+  function toggleLike(id){const was=!!likedPosts[id];setLikedPosts(v=>({...v,[id]:!was}));setPosts(v=>v.map(p=>p.id===id?{...p,likes:Math.max(0,p.likes+(was?-1:1))}:p));}
+  function toggleBookmark(id){setBookmarkedPosts(v=>({...v,[id]:!v[id]}));showNotice(bookmarkedPosts[id]?"Removed from bookmarks.":"Saved to bookmarks.");}
+  if(selectedCommunity){const community=selectedCommunity;return (<main className="community-shell">
+    <header className="community-topbar"><button className="community-brand" onClick={()=>setSelectedCommunity(null)}><span className="community-brand-mark"><Users size={19} fill="currentColor"/></span><span>Connect<span>Hub</span></span></button><div className="community-search"><Search size={17}/><input placeholder="Search communities, posts, or topics..."/></div><div className="community-top-actions"><button onClick={()=>onNavigate?.("Favorites")}><Heart size={20}/></button><button><MessageCircle size={20}/></button><button className="community-notification"><Bell size={19}/><i/></button><button className="community-profile-mini"><span>{avatar?<img src={avatar} alt=""/>:<UserRound size={17}/>}</span><b>{currentName.split(" ")[0]}</b><ChevronDown size={15}/></button></div></header>
+    <div className="community-layout"><UniversalSidebar activeNav="Communities" onNavigate={onNavigate} onLogout={onLogout}/><section className="community-main">
+      <div className="community-cover"><div className="community-cover-art" style={{backgroundImage:"url("+community.image+")",backgroundSize:"cover",backgroundPosition:"center"}}></div><div className="community-header-card"><div className="community-logo">{community.icon}</div><div className="community-title-block"><h1>{community.name}</h1><p>{community.members} members <span>•</span> {community.privacy} <span>•</span> {community.category}</p><small>{community.desc}</small></div><div className="community-header-actions"><button className={joined[community.name]?"community-join joined":"community-join"} onClick={()=>setJoined(v=>({...v,[community.name]:!v[community.name]}))}>{joined[community.name]?"✓ Joined":"Join Community"}</button><button className="community-more">•••</button></div></div><nav className="community-tabs">{["Posts","About","Members","Events","Tickets"].map((tab,i)=><button key={tab} className={i===0?"active":""} onClick={()=>i?showNotice("No "+tab.toLowerCase()+" available yet."):null}>{tab}</button>)}</nav></div>
+      <section className="community-composer"><div className="community-composer-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-composer-body"><textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder={"Write something to the community, "+currentName.split(" ")[0]+"..."} rows={2}/><div className="community-composer-actions"><div><button onClick={()=>showNotice("Image posting will be connected next.")}>＋ Image</button><button onClick={()=>showNotice("Polls will be connected next.")}>▥ Poll</button><button onClick={()=>showNotice("Tagging will be connected next.")}>⌑ Tag</button></div><button className="community-post-button" onClick={addPost}>Post</button></div></div></section>
+      <div className="community-feed-filter"><button className="active">Latest</button><button onClick={()=>showNotice("Popular sorting will be connected next.")}>Popular</button><button onClick={()=>showNotice("Following posts will be connected next.")}>Following</button></div>
+      <section className="community-feed">{posts.map(post=><article className="community-post" key={post.id}><div className="community-post-avatar"><UserRound size={18}/></div><div className="community-post-body"><div className="community-post-head"><div><b>{post.name}</b><span>{post.role}</span><small>• {post.time}</small></div><button>•••</button></div><p className="community-post-text">{post.text}</p><div className="community-post-actions"><button className={likedPosts[post.id]?"active like":""} onClick={()=>toggleLike(post.id)}><Heart size={17} fill={likedPosts[post.id]?"currentColor":"none"}/>{post.likes}</button><button className={commentOpen[post.id]?"active":""} onClick={()=>setCommentOpen(v=>({...v,[post.id]:!v[post.id]}))}><MessageCircle size={17}/>{post.comments}</button><button className={bookmarkedPosts[post.id]?"active bookmark":""} onClick={()=>toggleBookmark(post.id)}><Bookmark size={17} fill={bookmarkedPosts[post.id]?"currentColor":"none"}/></button></div>{commentOpen[post.id]&&<div className="community-comment-box"><div className="community-comment-avatar"><UserRound size={15}/></div><input placeholder="Write a comment..." onKeyDown={e=>{if(e.key==="Enter"){setPosts(v=>v.map(p=>p.id===post.id?{...p,comments:p.comments+1}:p));setCommentOpen(v=>({...v,[post.id]:false}));showNotice("Comment added.");}}}/><button onClick={()=>showNotice("Comment added.")}>Post</button></div>}</div></article>)}</section>
+    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p></section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}</main>);}
   return (
     <main className="communities-discover-shell">
       <header className="community-topbar">
@@ -697,7 +712,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
           <div className="community-category-pills">{categories.map(item => <button key={item} className={category===item ? "active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
           <div className="community-discover-grid">
             {filtered.map(item => (
-              <article className="community-discover-card" key={item.name}>
+              <article className="community-discover-card" key={item.name} onClick={(event)=>{if(event.target.closest("button"))return;setSelectedCommunity(item);}}>
                 <div className="community-card-cover" style={{backgroundImage:"url("+item.image+")"}}><div className="community-card-menu">•••</div></div>
                 <div className="community-card-content">
                   <div className="community-card-icon">{item.icon}</div>

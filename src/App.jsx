@@ -1346,18 +1346,4 @@ export default function App() {
       </div>}
     </main>
   );
-}          </div>
-            <aside className="communities-dashboard-right">
-              <section className="my-communities-card">
-                <div className="my-communities-head"><h2>My Communities</h2><button onClick={()=>showNotice("Showing all your communities.")}>View all <ArrowRight size={14}/></button></div>
-                <div className="my-community-tabs"><button className="active">Created by me ({communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).length})</button><button>Joined ({Math.max(0,joinedCommunityIds.filter(id=>!myCommunityIds.includes(id)).length)})</button></div>
-                <div className="my-community-list">
-                  {communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).slice(0,3).map(c=><button className="my-community-item" key={c.id||c.name} onClick={()=>setSelectedCommunity(c)}><div className="my-community-thumb" style={{backgroundImage:"url("+c.image+")"}}></div><div className="my-community-copy"><b>{c.name}</b><span>{c.members} members • {c.privacy}</span></div><em>Owner</em><span className="my-community-dots">•••</span></button>)}
-                  {!communityCards.some(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)) && <div className="my-community-empty">Create your first community and it will appear here.</div>}
-                </div>
-              </section>
-              <section className="my-activity-card"><h2>Your Community Activity</h2><div className="activity-stats"><div><b>{communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).length}</b><span>My Community</span></div><div><b>{Math.max(0,joinedCommunityIds.filter(id=>!myCommunityIds.includes(id)).length)}</b><span>Joined Communities</span></div><div><b>0</b><span>Posts</span></div><div><b>0</b><span>Likes Received</span></div></div></section>
-              <section className="recommended-community-card"><div className="my-communities-head"><h2>Recommended for You</h2><button>View all <ArrowRight size={14}/></button></div><div className="recommended-row"><span>🎓</span><div><b>Kharagpur Students</b><small>1,210 members</small></div><button>Join</button></div><div className="recommended-row"><span>🚆</span><div><b>Travel Buddies India</b><small>3,560 members</small></div><button>Join</button></div><div className="recommended-row"><span>🎓</span><div><b>MTech Aspirants</b><small>980 members</small></div><button>Join</button></div></section>
-            </aside>
-          </div>
-
+} 

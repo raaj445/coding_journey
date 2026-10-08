@@ -631,7 +631,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [likedPosts,setLikedPosts]=useState({}); const [bookmarkedPosts,setBookmarkedPosts]=useState({}); const [commentOpen,setCommentOpen]=useState({}); const [postText,setPostText]=useState("");
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
-  const [joined, setJoined] = useState({ "IIT Kharagpur": true });
+  const [joined, setJoined] = useState({});
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState({ name:"", type:"", description:"", state:"", city:"", privacy:"Public", rules:"", coverFile:null, iconFile:null });
   const [coverPreview, setCoverPreview] = useState("");

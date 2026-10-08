@@ -1106,7 +1106,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
                       <h2>{item.name}</h2>
                       <p className="community-card-meta">{item.members} members <span>•</span> {item.privacy}</p>
                       <p className="community-card-description">{item.desc}</p>
-                      <button className={isOwner ? "community-card-join owner" : isJoined ? "community-card-join joined" : "community-card-join"} onClick={()=>isOwner ? openCommunity(item) : joinCommunity(item)}>{isOwner ? "★  My Community" : isJoined ? "✓  Joined" : "Join Community"}</button>
+                      <button className={isOwner ? "community-card-join owner" : isJoined ? "community-card-join joined" : "community-card-join"} onClick={()=>isOwner ? openCommunity(item) : isJoined ? startLeaveCommunity(item) : joinCommunity(item)}>{isOwner ? "★  My Community" : isJoined ? "✓  Joined" : "Join Community"}</button>
                     </div>
                   </article>;
                 })}

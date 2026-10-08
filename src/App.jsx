@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight, CalendarDays, Trash2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight, CalendarDays, Trash2, Star, Share2, X } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
 import ConcertTicketListingPage from "./ConcertTicketListingPage";
@@ -647,6 +647,13 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [postSearch, setPostSearch] = useState("");
   const [pendingRequestIds, setPendingRequestIds] = useState([]);
+  const [communityReviews, setCommunityReviews] = useState([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [leaveStep, setLeaveStep] = useState("confirm");
+  const [leaveRating, setLeaveRating] = useState(0);
+  const [leaveReview, setLeaveReview] = useState("");
+  const [leavingCommunity, setLeavingCommunity] = useState(false);
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
   const [communityCards, setCommunityCards] = useState([
@@ -675,6 +682,11 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
           return { id:row.id, ownerId:row.owner_id, name:row.name, category:row.category, members:String(count ?? 0), privacy:row.privacy, desc:row.description, image:row.cover_url || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=85", icon:row.icon_url || "👥", state:row.state, city:row.city, rules:row.rules, createdAt:row.created_at };
         }));
         setCommunityCards(cards);
+        const sharedCommunityId = new URLSearchParams(window.location.search).get("community");
+        if (sharedCommunityId) {
+          const sharedCommunity = cards.find(item => item.id === sharedCommunityId);
+          if (sharedCommunity) setSelectedCommunity(sharedCommunity);
+        }
       }
       if (user?.id) {
         const { data: memberships } = await supabase.from("community_members").select("community_id,role").eq("user_id",user.id);
@@ -716,12 +728,15 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     setActiveCommunityTab("Posts");
     setMemberRoleFilter("ALL");
     (async () => {
-      const [{data:postRows},{data:memberRows}] = await Promise.all([
+      const [{data:postRows},{data:memberRows},{data:reviewRows}] = await Promise.all([
         supabase.from("community_posts").select("*").eq("community_id",selectedCommunity.id).order("created_at",{ascending:false}),
-        supabase.from("community_members").select("*").eq("community_id",selectedCommunity.id).order("joined_at",{ascending:true})
+        supabase.from("community_members").select("*").eq("community_id",selectedCommunity.id).order("joined_at",{ascending:true}),
+        supabase.from("community_reviews").select("id,user_id,rating,review,created_at,updated_at").eq("community_id",selectedCommunity.id).order("created_at",{ascending:false})
       ]);
       if (!postRows) return;
       setCommunityMembers(memberRows || []);
+      setCommunityReviews(reviewRows || []);
+      setReviewLoading(false);
       const ids = postRows.map(p=>p.id);
       if (!ids.length) {
         setPosts([]);
@@ -783,6 +798,79 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     setNotice(message);
     window.clearTimeout(window.__connectHubCommunityNotice);
     window.__connectHubCommunityNotice = window.setTimeout(() => setNotice(""), 2200);
+  }
+
+  function openCommunity(community) {
+    setSelectedCommunity(community);
+    if (community?.id) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("community", community.id);
+      window.history.replaceState({ communityId: community.id }, "", url.href);
+    }
+  }
+
+  function closeCommunity() {
+    setSelectedCommunity(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("community");
+    window.history.replaceState({}, "", url.href);
+  }
+
+  async function shareCommunity(community) {
+    if (!community?.id) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("community", community.id);
+    const shareUrl = url.toString();
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: community.name, text: "Join " + community.name + " on ConnectHub", url: shareUrl });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        showNotice("Community link copied.");
+      } else {
+        window.prompt("Copy this community link:", shareUrl);
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") showNotice("Could not share the community link.");
+    }
+  }
+
+  function startLeaveCommunity() {
+    if (!selectedCommunity?.id) return;
+    if (selectedCommunity.ownerId === user?.id || myCommunityIds.includes(selectedCommunity.id)) {
+      showNotice("Community owners cannot leave. Transfer ownership first.");
+      return;
+    }
+    setLeaveStep("confirm");
+    setLeaveRating(0);
+    setLeaveReview("");
+    setLeaveModalOpen(true);
+  }
+
+  async function submitLeaveCommunity(saveFeedback) {
+    if (!selectedCommunity?.id || !supabase || leavingCommunity) return;
+    if (saveFeedback && leaveReview.trim() && !leaveRating) {
+      showNotice("Choose a rating before submitting feedback.");
+      return;
+    }
+    setLeavingCommunity(true);
+    const { error } = await supabase.rpc("leave_community", {
+      p_community_id: selectedCommunity.id,
+      p_rating: saveFeedback && leaveRating ? leaveRating : null,
+      p_review: saveFeedback && leaveReview.trim() ? leaveReview.trim() : null
+    });
+    setLeavingCommunity(false);
+    if (error) {
+      showNotice(error.message || "Could not leave this community.");
+      return;
+    }
+    const leftId = selectedCommunity.id;
+    setJoined(v => ({ ...v, [selectedCommunity.name]: false }));
+    setJoinedCommunityIds(v => v.filter(id => id !== leftId));
+    setCommunityCards(v => v.map(item => item.id === leftId ? { ...item, members: String(Math.max(0, Number(item.members || 0) - 1)) } : item));
+    setLeaveModalOpen(false);
+    closeCommunity();
+    showNotice(saveFeedback && leaveRating ? "You left the community. Thanks for the feedback!" : "You left the community.");
   }
 
   function handleFile(event, setter, field) {
@@ -953,16 +1041,16 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     const unreadNotifications=notifications.filter(n=>!n.read_at).length;
     const filteredVisiblePosts=visiblePosts.filter(p=>(postSort!=="saved" || bookmarkedPosts[p.id]) && (!postSearch.trim() || (p.text+" "+p.name+" "+p.role).toLowerCase().includes(postSearch.toLowerCase())));
     return (<main className="community-shell">
-    <header className="community-topbar"><button className="community-brand" onClick={()=>setSelectedCommunity(null)}><span className="community-brand-mark"><Users size={19} fill="currentColor"/></span><span>Connect<span>Hub</span></span></button><div className="community-search"><Search size={17}/><input value={postSearch} onChange={e=>setPostSearch(e.target.value)} placeholder="Search posts or topics..."/></div><div className="community-top-actions"><button onClick={()=>onNavigate?.("Favorites")}><Heart size={20}/></button><button><MessageCircle size={20}/></button><div className="community-notification-wrap"><button className="community-notification" onClick={()=>{setNotificationOpen(v=>!v);markNotificationsRead();}}><Bell size={19}/>{unreadNotifications>0&&<i/>}</button>{notificationOpen&&<div className="community-notification-panel"><div className="community-notification-head"><b>Notifications</b><button onClick={markNotificationsRead}>Mark all read</button></div>{notifications.length?notifications.slice(0,12).map(n=><div className={n.read_at?"community-notification-item":"community-notification-item unread"} key={n.id}><b>{n.title}</b><p>{n.body}</p><small>{new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</small></div>):<div className="community-empty-inline">No notifications yet.</div>}</div>}</div><button className="community-profile-mini"><span>{avatar?<img src={avatar} alt=""/>:<UserRound size={17}/>}</span><b>{currentName.split(" ")[0]}</b><ChevronDown size={15}/></button></div></header>
+    <header className="community-topbar"><button className="community-brand" onClick={closeCommunity}><span className="community-brand-mark"><Users size={19} fill="currentColor"/></span><span>Connect<span>Hub</span></span></button><div className="community-search"><Search size={17}/><input value={postSearch} onChange={e=>setPostSearch(e.target.value)} placeholder="Search posts or topics..."/></div><div className="community-top-actions"><button onClick={()=>onNavigate?.("Favorites")}><Heart size={20}/></button><button><MessageCircle size={20}/></button><div className="community-notification-wrap"><button className="community-notification" onClick={()=>{setNotificationOpen(v=>!v);markNotificationsRead();}}><Bell size={19}/>{unreadNotifications>0&&<i/>}</button>{notificationOpen&&<div className="community-notification-panel"><div className="community-notification-head"><b>Notifications</b><button onClick={markNotificationsRead}>Mark all read</button></div>{notifications.length?notifications.slice(0,12).map(n=><div className={n.read_at?"community-notification-item":"community-notification-item unread"} key={n.id}><b>{n.title}</b><p>{n.body}</p><small>{new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</small></div>):<div className="community-empty-inline">No notifications yet.</div>}</div>}</div><button className="community-profile-mini"><span>{avatar?<img src={avatar} alt=""/>:<UserRound size={17}/>}</span><b>{currentName.split(" ")[0]}</b><ChevronDown size={15}/></button></div></header>
     <div className="community-layout"><UniversalSidebar activeNav="Communities" onNavigate={onNavigate} onLogout={onLogout}/><section className="community-main">
       <button className="community-back-dashboard" onClick={()=>setSelectedCommunity(null)}><ArrowRight size={17} style={{transform:"rotate(180deg)"}}/> Back to Community Dashboard</button>
-      <div className="community-cover"><div className="community-cover-art" style={{backgroundImage:"url("+community.image+")",backgroundSize:"cover",backgroundPosition:"center"}}></div><div className="community-header-card"><div className="community-logo">{community.icon?.startsWith("http")?<img src={community.icon} alt=""/>:community.icon}</div><div className="community-title-block"><h1>{community.name}</h1><p>{community.members} members <span>•</span> {community.privacy} <span>•</span> {community.category}</p><small>{community.desc}</small></div><div className="community-header-actions">{(() => { const isOwner = isOwnerCurrent; const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id); const pending = pendingRequestIds.includes(community.id); return <button className={isOwner ? "community-join owner" : isMember ? "community-join joined" : pending ? "community-join pending" : "community-join"} onClick={()=>isOwner ? showNotice("This is your community.") : pending ? showNotice("Join request is pending.") : joinCommunity(community)}>{isOwner ? "★  My Community" : isMember ? "✓ Joined" : pending ? "⏳ Request Sent" : "Join Community"}</button>; })()}<button className="community-more">•••</button></div></div><nav className="community-tabs">{["Posts","About","Members","Events","Tickets"].map(tab=><button key={tab} className={activeCommunityTab===tab?"active":""} onClick={()=>setActiveCommunityTab(tab)}>{tab}</button>)}</nav></div>
+      <div className="community-cover"><div className="community-cover-art" style={{backgroundImage:"url("+community.image+")",backgroundSize:"cover",backgroundPosition:"center"}}></div><div className="community-header-card"><div className="community-logo">{community.icon?.startsWith("http")?<img src={community.icon} alt=""/>:community.icon}</div><div className="community-title-block"><h1>{community.name}</h1><p>{community.members} members <span>•</span> {community.privacy} <span>•</span> {community.category}</p><small>{community.desc}</small></div><div className="community-header-actions">{(() => { const isOwner = isOwnerCurrent; const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id); const pending = pendingRequestIds.includes(community.id); return <button className={isOwner ? "community-join owner" : isMember ? "community-join joined" : pending ? "community-join pending" : "community-join"} onClick={()=>isOwner ? showNotice("This is your community.") : pending ? showNotice("Join request is pending.") : joinCommunity(community)}>{isOwner ? "★  My Community" : isMember ? "✓ Joined" : pending ? "⏳ Request Sent" : "Join Community"}</button>; })()}<button className="community-share-button" onClick={()=>shareCommunity(community)} title="Share community link"><Share2 size={16}/> Share</button></div></div><nav className="community-tabs">{["Posts","About","Members","Events","Tickets"].map(tab=><button key={tab} className={activeCommunityTab===tab?"active":""} onClick={()=>setActiveCommunityTab(tab)}>{tab}</button>)}</nav></div>
       {activeCommunityTab==="Posts" && <>
       <section className="community-composer"><div className="community-composer-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-composer-body"><textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder={"Write something to the community, "+currentName.split(" ")[0]+"..."} rows={2}/><div className="community-composer-actions"><div><button onClick={()=>showNotice("Image posting will be connected in V2.2.")}>＋ Image</button><button onClick={()=>showNotice("Polls will be connected in V2.2.")}>▥ Poll</button><button onClick={()=>showNotice("Tagging will be connected in V2.2.")}>⌑ Tag</button></div><button className="community-post-button" onClick={addPost}>Post</button></div></div></section>
       <div className="community-feed-filter"><button className={postSort==="latest"?"active":""} onClick={()=>setPostSort("latest")}>Latest</button><button className={postSort==="popular"?"active":""} onClick={()=>setPostSort("popular")}>Popular</button><button className={postSort==="saved"?"active":""} onClick={()=>setPostSort("saved")}>Saved</button><span className="community-feed-count">{filteredVisiblePosts.length} posts</span></div>
       <section className="community-feed">{filteredVisiblePosts.map(post=><article className="community-post" key={post.id}><div className="community-post-avatar">{post.avatar?<img src={post.avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-post-body"><div className="community-post-head"><div><b>{post.name}</b><span>{post.role}</span><small>• {post.time}</small></div>{post.authorId===user?.id ? <button className="community-delete-button" title="Delete post" onClick={()=>deletePost(post.id)}><Trash2 size={16}/></button> : <button className="community-more" aria-label="Post options">•••</button>}</div><p className="community-post-text">{post.text}</p><div className="community-post-actions"><button className={likedPosts[post.id]?"active like":""} onClick={()=>toggleLike(post.id)}><Heart size={17} fill={likedPosts[post.id]?"currentColor":"none"}/>{post.likes}</button><button className={commentOpen[post.id]?"active":""} onClick={()=>setCommentOpen(v=>({...v,[post.id]:!v[post.id]}))}><MessageCircle size={17}/>{post.comments}</button><button className={bookmarkedPosts[post.id]?"active bookmark":""} onClick={()=>toggleBookmark(post.id)}><Bookmark size={17} fill={bookmarkedPosts[post.id]?"currentColor":"none"}/></button></div>{commentOpen[post.id]&&<div className="community-comment-wrap">{(commentsByPost[post.id]||[]).map(c=><div className="community-comment-item" key={c.id}><div className="community-comment-avatar">{c.author_avatar_url?<img src={c.author_avatar_url} alt=""/>:<UserRound size={15}/>}</div><div><b>{c.author_name}</b><p>{c.body}</p></div>{c.author_id===user?.id&&<button className="community-comment-delete" title="Delete comment" onClick={()=>deleteComment(post.id,c.id)}><Trash2 size={14}/></button>}</div>)}<div className="community-comment-box"><div className="community-comment-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={15}/>}</div><input value={commentDrafts[post.id]||""} placeholder="Write a comment..." onChange={e=>setCommentDrafts(v=>({...v,[post.id]:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();addComment(post.id);}}}/><button onClick={()=>addComment(post.id)}>Post</button></div></div>}</div></article>)}{!filteredVisiblePosts.length&&<div className="community-empty-inline community-feed-empty"><h3>No posts yet</h3><p>Be the first to start the conversation in this community.</p></div>}</section>
       </>}
-      {activeCommunityTab==="About" && <section className="community-detail-panel"><div className="community-detail-card"><h2>About this community</h2><p>{community.desc || "No description added yet."}</p><div className="community-about-grid"><div><span>Category</span><b>{community.category}</b></div><div><span>Privacy</span><b>{community.privacy}</b></div><div><span>Location</span><b>{community.city ? community.city+", "+community.state : "Not specified"}</b></div><div><span>Created</span><b>{community.createdAt ? new Date(community.createdAt).toLocaleDateString() : "—"}</b></div></div><h3>Community Rules</h3><ol className="community-rules">{(community.rules||"Be respectful and kind.").split(/\\n|\n/).filter(Boolean).map((r,i)=><li key={i}>{r}</li>)}</ol></div></section>}
+      {activeCommunityTab==="About" && <section className="community-detail-panel"><div className="community-detail-card"><h2>About this community</h2><p>{community.desc || "No description added yet."}</p><div className="community-about-grid"><div><span>Category</span><b>{community.category}</b></div><div><span>Privacy</span><b>{community.privacy}</b></div><div><span>Location</span><b>{community.city ? community.city+", "+community.state : "Not specified"}</b></div><div><span>Created</span><b>{community.createdAt ? new Date(community.createdAt).toLocaleDateString() : "—"}</b></div></div><div className="community-review-summary"><div><span className="community-review-score">{communityReviews.length ? (communityReviews.reduce((sum,r)=>sum+Number(r.rating||0),0)/communityReviews.length).toFixed(1) : "—"}</span><div className="community-review-stars">{[1,2,3,4,5].map(star=><Star key={star} size={15} fill={communityReviews.length && star <= Math.round(communityReviews.reduce((sum,r)=>sum+Number(r.rating||0),0)/communityReviews.length) ? "currentColor" : "none"}/>)}</div><small>{communityReviews.length} review{communityReviews.length===1?"":"s"}</small></div><div className="community-review-copy"><b>Community rating</b><span>Ratings and feedback from people who have left the community.</span></div></div><h3>Reviews</h3>{reviewLoading ? <div className="community-empty-inline">Loading reviews...</div> : communityReviews.length ? <div className="community-review-list">{communityReviews.slice(0,6).map(review=><article className="community-review-item" key={review.id}><div className="community-review-avatar"><UserRound size={15}/></div><div><div className="community-review-head"><b>Community member</b><span>{[1,2,3,4,5].map(star=><Star key={star} size={12} fill={star<=review.rating?"currentColor":"none"}/>)}</span></div>{review.review&&<p>{review.review}</p>}<small>{new Date(review.created_at).toLocaleDateString()}</small></div></article>)}</div> : <div className="community-empty-inline">No reviews yet.</div>}<h3>Community Rules</h3><ol className="community-rules">{(community.rules||"Be respectful and kind.").split(/\\n|\n/).filter(Boolean).map((r,i)=><li key={i}>{r}</li>)}</ol></div></section>}
       {activeCommunityTab==="Members" && <section className="community-detail-panel"><div className="community-detail-card">
       <div className="community-detail-head"><div><h2>Members</h2><p>{communityMembers.length} members</p></div><input value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} placeholder="Search members..." /></div>
       <div className="community-member-role-tabs">
@@ -983,7 +1071,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       {!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No members in this category.</div>}
       </div></section>}{activeCommunityTab==="Events" && <section className="community-empty-tab"><div className="community-empty-icon">🎉</div><h2>No events yet</h2><p>Community events will appear here. Event creation is planned for V2.2.</p></section>}
       {activeCommunityTab==="Tickets" && <section className="community-empty-tab"><div className="community-empty-icon">🎟️</div><h2>No community tickets yet</h2><p>Ticket posts connected to this community will appear here in a later release.</p></section>}
-    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p></section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}</main>);}
+    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={startLeaveCommunity}>Leave Community</button>}</section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}</main>);}
   return (
     <main className="communities-discover-shell">
       <header className="community-topbar">
@@ -1012,14 +1100,14 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
                 {filtered.map(item => {
                   const isOwner = item.ownerId === user?.id || myCommunityIds.includes(item.id);
                   const isJoined = isOwner || joined[item.name] || joinedCommunityIds.includes(item.id);
-                  return <article className="community-discover-card" key={item.id || item.name} onClick={(event)=>{if(event.target.closest("button"))return;setSelectedCommunity(item);}}>
+                  return <article className="community-discover-card" key={item.id || item.name} onClick={(event)=>{if(event.target.closest("button"))return;openCommunity(item);}}>
                     <div className="community-card-cover" style={{backgroundImage:"url("+item.image+")"}}><div className="community-card-menu">•••</div></div>
                     <div className="community-card-content">
                       <div className="community-card-icon">{item.icon?.startsWith("http")?<img src={item.icon} alt=""/>:item.icon}</div>
                       <h2>{item.name}</h2>
                       <p className="community-card-meta">{item.members} members <span>•</span> {item.privacy}</p>
                       <p className="community-card-description">{item.desc}</p>
-                      <button className={isOwner ? "community-card-join owner" : isJoined ? "community-card-join joined" : "community-card-join"} onClick={()=>isOwner ? setSelectedCommunity(item) : joinCommunity(item)}>{isOwner ? "★  My Community" : isJoined ? "✓  Joined" : "Join Community"}</button>
+                      <button className={isOwner ? "community-card-join owner" : isJoined ? "community-card-join joined" : "community-card-join"} onClick={()=>isOwner ? openCommunity(item) : joinCommunity(item)}>{isOwner ? "★  My Community" : isJoined ? "✓  Joined" : "Join Community"}</button>
                     </div>
                   </article>;
                 })}
@@ -1031,7 +1119,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
                 <div className="my-communities-head"><h2>My Communities</h2><button onClick={()=>showNotice("Showing all your communities.")}>View all <ArrowRight size={14}/></button></div>
                 <div className="my-community-tabs"><button className="active">Created by me ({communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).length})</button><button>Joined ({Math.max(0,joinedCommunityIds.filter(id=>!myCommunityIds.includes(id)).length)})</button></div>
                 <div className="my-community-list">
-                  {communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).slice(0,3).map(c=><button className="my-community-item" key={c.id||c.name} onClick={()=>setSelectedCommunity(c)}><div className="my-community-thumb" style={{backgroundImage:"url("+c.image+")"}}></div><div className="my-community-copy"><b>{c.name}</b><span>{c.members} members • {c.privacy}</span></div><em>Owner</em><span className="my-community-dots">•••</span></button>)}
+                  {communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).slice(0,3).map(c=><button className="my-community-item" key={c.id||c.name} onClick={()=>openCommunity(c)}><div className="my-community-thumb" style={{backgroundImage:"url("+c.image+")"}}></div><div className="my-community-copy"><b>{c.name}</b><span>{c.members} members • {c.privacy}</span></div><em>Owner</em><span className="my-community-dots">•••</span></button>)}
                   {!communityCards.some(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)) && <div className="my-community-empty">Create your first community and it will appear here.</div>}
                 </div>
               </section>
@@ -1064,6 +1152,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
         )}
       </div>
       {notice && <div className="community-toast">{notice}</div>}
+      {leaveModalOpen && <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!leavingCommunity)setLeaveModalOpen(false)}}><div className="community-leave-modal"><button className="community-modal-close" onClick={()=>!leavingCommunity&&setLeaveModalOpen(false)}><X size={17}/></button>{leaveStep==="confirm"?<><div className="community-modal-icon danger">↪</div><h2>Leave {community.name}?</h2><p>You will lose access to community posts, members and discussions until you join again.</p><div className="community-modal-actions"><button onClick={()=>setLeaveModalOpen(false)}>Stay</button><button className="danger" onClick={()=>setLeaveStep("feedback")}>Continue</button></div></>:<><div className="community-modal-icon">★</div><h2>How was your experience?</h2><p>Your feedback is optional and helps improve this community.</p><div className="community-rating-input">{[1,2,3,4,5].map(star=><button type="button" key={star} className={star<=leaveRating?"active":""} onClick={()=>setLeaveRating(star)} aria-label={star+" star"}><Star size={28} fill={star<=leaveRating?"currentColor":"none"}/></button>)}</div><textarea value={leaveReview} onChange={e=>setLeaveReview(e.target.value)} maxLength={500} placeholder="Optional feedback..."/><small className="community-review-count">{leaveReview.length}/500</small><div className="community-modal-actions stacked"><button onClick={()=>submitLeaveCommunity(false)} disabled={leavingCommunity}>Skip & Leave</button><button className="primary" onClick={()=>submitLeaveCommunity(true)} disabled={leavingCommunity||!leaveRating}>{leavingCommunity?"Leaving...":"Submit & Leave"}</button></div></>}</div></div>}
     </main>
   );
 }

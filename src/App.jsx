@@ -684,6 +684,28 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!supabase || !user?.id) return;
+    let alive = true;
+    const loadNotifications = async () => {
+      const { data } = await supabase.from("community_notifications").select("*").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30);
+      if (alive) setNotifications(data || []);
+    };
+    loadNotifications();
+    const channel = supabase.channel("community-notifications-" + user.id)
+      .on("postgres_changes",{event:"*",schema:"public",table:"community_notifications",filter:"user_id=eq."+user.id},()=>loadNotifications())
+      .subscribe();
+    return () => { alive=false; supabase.removeChannel(channel); };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!selectedCommunity?.id || !supabase || !user?.id) return;
+    const ownerOrAdmin = myCommunityIds.includes(selectedCommunity.id) || communityMembers.some(m=>m.user_id===user.id && ["OWNER","ADMIN"].includes(m.role));
+    if (!ownerOrAdmin) { setJoinRequests([]); return; }
+    supabase.from("community_join_requests").select("*").eq("community_id",selectedCommunity.id).eq("status","PENDING").order("created_at",{ascending:true})
+      .then(({data})=>setJoinRequests(data||[]));
+  }, [selectedCommunity?.id,user?.id,communityMembers,communityRefreshTick]);
+
+  useEffect(() => {
     if (!selectedCommunity?.id || !supabase) return;
     setActiveCommunityTab("Posts");
     (async () => {
@@ -823,6 +845,52 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     setPosts(v=>[{id:data.id,authorId:data.author_id,name:data.author_name,role:data.author_role,time:new Date(data.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),rawCreatedAt:data.created_at,text:data.body,likes:0,comments:0,avatar:data.author_avatar_url},...v]);
     setPostText("");showNotice("Post published.");
   }
+  async function markNotificationsRead(){
+    if(!supabase || !user?.id) return;
+    const unread=notifications.filter(n=>!n.read_at).map(n=>n.id);
+    if(!unread.length) return;
+    await supabase.from("community_notifications").update({read_at:new Date().toISOString()}).in("id",unread);
+    setNotifications(v=>v.map(n=>({...n,read_at:n.read_at||new Date().toISOString()})));
+  }
+
+  async function handleJoinRequest(requestId,status){
+    if(!supabase || !selectedCommunity?.id) return;
+    const {error}=await supabase.from("community_join_requests").update({status}).eq("id",requestId).eq("community_id",selectedCommunity.id);
+    if(error){showNotice(error.message||"Could not update request.");return;}
+    if(status==="ACCEPTED"){
+      const request=joinRequests.find(r=>r.id===requestId);
+      if(request){
+        const {error:memberError}=await supabase.from("community_members").insert({community_id:selectedCommunity.id,user_id:request.user_id,role:"MEMBER"});
+        if(memberError && !/duplicate/i.test(memberError.message)){showNotice(memberError.message);return;}
+      }
+    }
+    setJoinRequests(v=>v.filter(r=>r.id!==requestId));
+    setCommunityRefreshTick(v=>v+1);
+    showNotice(status==="ACCEPTED"?"Join request accepted.":"Join request rejected.");
+  }
+
+  async function changeMemberRole(memberId,nextRole){
+    if(!supabase || !selectedCommunity?.id) return;
+    const target=communityMembers.find(m=>m.id===memberId);
+    if(!target || target.role==="OWNER"){showNotice("Owner role cannot be changed.");return;}
+    const {error}=await supabase.from("community_members").update({role:nextRole}).eq("id",memberId).eq("community_id",selectedCommunity.id);
+    if(error){showNotice(error.message||"Could not change member role.");return;}
+    setMemberMenu(null);
+    setCommunityRefreshTick(v=>v+1);
+    showNotice(nextRole==="ADMIN"?"Member promoted to Admin.":"Admin role removed.");
+  }
+
+  async function removeMember(memberId){
+    if(!supabase || !selectedCommunity?.id) return;
+    const target=communityMembers.find(m=>m.id===memberId);
+    if(!target || target.role==="OWNER"){showNotice("Owner cannot be removed.");return;}
+    const {error}=await supabase.from("community_members").delete().eq("id",memberId).eq("community_id",selectedCommunity.id);
+    if(error){showNotice(error.message||"Could not remove member.");return;}
+    setMemberMenu(null);
+    setCommunityRefreshTick(v=>v+1);
+    showNotice("Member removed.");
+  }
+
   async function addComment(postId){
     const body=(commentDrafts[postId]||"").trim();
     if(!body){showNotice("Write a comment first.");return;}

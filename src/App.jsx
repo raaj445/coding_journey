@@ -628,6 +628,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [commentDrafts, setCommentDrafts] = useState({});
   const [activeCommunityTab, setActiveCommunityTab] = useState("Posts");
   const [memberSearch, setMemberSearch] = useState("");
+  const [memberRoleFilter, setMemberRoleFilter] = useState("ALL");
   const [likedPosts,setLikedPosts]=useState({}); const [bookmarkedPosts,setBookmarkedPosts]=useState({}); const [commentOpen,setCommentOpen]=useState({}); const [postText,setPostText]=useState(""); const [postSort,setPostSort]=useState("latest"); const [communityRefreshTick,setCommunityRefreshTick]=useState(0);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -732,7 +733,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
             supabase.from("community_post_likes").select("*",{count:"exact",head:true}).eq("post_id",p.id),
             supabase.from("community_comments").select("*",{count:"exact",head:true}).eq("post_id",p.id)
           ]);
-          return {id:p.id,authorId:p.author_id,name:p.author_name,role:p.author_role,time:new Date(p.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),rawCreatedAt:p.created_at,text:p.body,likes:likes||0,comments:comments||0,avatar:p.author_avatar_url};
+          const liveMember=memberRows.find(m=>m.user_id===p.author_id);
+          return {id:p.id,authorId:p.author_id,name:p.author_name,role:liveMember?.role || p.author_role || "MEMBER",time:new Date(p.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),rawCreatedAt:p.created_at,text:p.body,likes:likes||0,comments:comments||0,avatar:liveMember?.avatar_url || p.author_avatar_url};
         })),
         user?.id ? supabase.from("community_post_likes").select("post_id").in("post_id",ids).eq("user_id",user.id) : Promise.resolve({data:[]}),
         user?.id ? supabase.from("community_post_bookmarks").select("post_id").in("post_id",ids).eq("user_id",user.id) : Promise.resolve({data:[]}),
@@ -841,12 +843,13 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   async function addPost(){
     if(!postText.trim()){showNotice("Write something before posting.");return;}
     if(!supabase || !user?.id || !selectedCommunity?.id){showNotice("Please open a real community before posting.");return;}
-    const isOwner = selectedCommunity.ownerId===user.id || myCommunityIds.includes(selectedCommunity.id);
+    const currentMember=communityMembers.find(m=>m.user_id===user.id);
+    const currentRole=(selectedCommunity.ownerId===user.id || myCommunityIds.includes(selectedCommunity.id))?"OWNER":(currentMember?.role || "MEMBER");
     const {data,error}=await supabase.from("community_posts").insert({
-      community_id:selectedCommunity.id,author_id:user.id,author_name:currentName,author_role:isOwner?"OWNER":"MEMBER",author_avatar_url:avatar||null,body:postText.trim()
+      community_id:selectedCommunity.id,author_id:user.id,author_name:currentName,author_role:currentRole,author_avatar_url:avatar||null,body:postText.trim()
     }).select("*").single();
     if(error){showNotice(error.message||"Could not publish post.");return;}
-    setPosts(v=>[{id:data.id,authorId:data.author_id,name:data.author_name,role:data.author_role,time:new Date(data.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),rawCreatedAt:data.created_at,text:data.body,likes:0,comments:0,avatar:data.author_avatar_url},...v]);
+    setPosts(v=>[{id:data.id,authorId:data.author_id,name:data.author_name,role:currentRole,time:new Date(data.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),rawCreatedAt:data.created_at,text:data.body,likes:0,comments:0,avatar:data.author_avatar_url},...v]);
     setPostText("");showNotice("Post published.");
   }
   async function markNotificationsRead(){
@@ -959,14 +962,22 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       {activeCommunityTab==="About" && <section className="community-detail-panel"><div className="community-detail-card"><h2>About this community</h2><p>{community.desc || "No description added yet."}</p><div className="community-about-grid"><div><span>Category</span><b>{community.category}</b></div><div><span>Privacy</span><b>{community.privacy}</b></div><div><span>Location</span><b>{community.city ? community.city+", "+community.state : "Not specified"}</b></div><div><span>Created</span><b>{community.createdAt ? new Date(community.createdAt).toLocaleDateString() : "—"}</b></div></div><h3>Community Rules</h3><ol className="community-rules">{(community.rules||"Be respectful and kind.").split(/\\n|\n/).filter(Boolean).map((r,i)=><li key={i}>{r}</li>)}</ol></div></section>}
       {activeCommunityTab==="Members" && <section className="community-detail-panel"><div className="community-detail-card">
       <div className="community-detail-head"><div><h2>Members</h2><p>{communityMembers.length} members</p></div><input value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} placeholder="Search members..." /></div>
+      <div className="community-member-role-tabs">
+        {[
+          ["ALL","All",communityMembers.length],
+          ["OWNER","Owners",communityMembers.filter(m=>m.role==="OWNER").length],
+          ["ADMIN","Admins",communityMembers.filter(m=>m.role==="ADMIN").length],
+          ["MEMBER","Members",communityMembers.filter(m=>m.role==="MEMBER").length]
+        ].map(([value,label,count])=><button key={value} className={memberRoleFilter===value?"active":""} onClick={()=>setMemberRoleFilter(value)}>{label}<span>{count}</span></button>)}
+      </div>
       {canManageMembers && isOwnerCurrent && joinRequests.length>0 && <div className="community-requests-box"><div className="community-requests-head"><div><h3>Join Requests</h3><p>{joinRequests.length} pending request{joinRequests.length>1?"s":""}</p></div></div>{joinRequests.map(r=><div className="community-request-item" key={r.id}><div className="community-member-avatar">{r.requester_avatar_url?<img src={r.requester_avatar_url} alt=""/>:<UserRound size={16}/>}</div><div><b>{r.requester_name||"Community member"}</b><small>Requested {new Date(r.created_at).toLocaleDateString()}</small></div><div className="community-request-actions"><button onClick={()=>handleJoinRequest(r.id,"ACCEPTED")}>Accept</button><button onClick={()=>handleJoinRequest(r.id,"REJECTED")}>Reject</button></div></div>)}</div>}
-      <div className="community-members-list">{communityMembers.filter(m=>(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase())).map(m=><div className="community-member-item" key={m.id}>
+      <div className="community-members-list">{communityMembers.filter(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase())).map(m=><div className="community-member-item" key={m.id}>
         <div className="community-member-avatar">{m.avatar_url?<img src={m.avatar_url} alt=""/>:<UserRound size={16}/>}</div>
         <div><b>{m.username || "Member"}</b><small>{m.role}</small></div>
         {m.role==="OWNER"?<em>Owner</em>:m.role==="ADMIN"?<em className="admin-badge">Admin</em>:<em className="member-badge">Member</em>}
         {canManageMembers && m.user_id!==user?.id && m.role!=="OWNER" && <div className="community-member-menu-wrap"><button className="community-member-menu-button" onClick={()=>setMemberMenu(v=>v===m.id?null:m.id)}>•••</button>{memberMenu===m.id&&<div className="community-member-menu">{isOwnerCurrent&&<button onClick={()=>changeMemberRole(m.id,m.role==="ADMIN"?"MEMBER":"ADMIN")}>{m.role==="ADMIN"?"Remove Admin":"Make Admin"}</button>}<button className="danger" onClick={()=>removeMember(m.id)}>Remove Member</button></div>}</div>}
       </div>)}</div>
-      {!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No matching members.</div>}
+      {!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No members in this category.</div>}
       </div></section>}{activeCommunityTab==="Events" && <section className="community-empty-tab"><div className="community-empty-icon">🎉</div><h2>No events yet</h2><p>Community events will appear here. Event creation is planned for V2.2.</p></section>}
       {activeCommunityTab==="Tickets" && <section className="community-empty-tab"><div className="community-empty-icon">🎟️</div><h2>No community tickets yet</h2><p>Ticket posts connected to this community will appear here in a later release.</p></section>}
     </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p></section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}</main>);}

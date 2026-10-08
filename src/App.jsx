@@ -638,6 +638,11 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [iconPreview, setIconPreview] = useState("");
   const [myCommunityIds, setMyCommunityIds] = useState([]);
   const [joinedCommunityIds, setJoinedCommunityIds] = useState([]);
+  const [memberMenu, setMemberMenu] = useState(null);
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [postSearch, setPostSearch] = useState("");
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
   const [communityCards, setCommunityCards] = useState([

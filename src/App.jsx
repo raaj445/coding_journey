@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight, CalendarDays } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight, CalendarDays, Trash2 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
 import ConcertTicketListingPage from "./ConcertTicketListingPage";
@@ -628,7 +628,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [commentDrafts, setCommentDrafts] = useState({});
   const [activeCommunityTab, setActiveCommunityTab] = useState("Posts");
   const [memberSearch, setMemberSearch] = useState("");
-  const [likedPosts,setLikedPosts]=useState({}); const [bookmarkedPosts,setBookmarkedPosts]=useState({}); const [commentOpen,setCommentOpen]=useState({}); const [postText,setPostText]=useState("");
+  const [likedPosts,setLikedPosts]=useState({}); const [bookmarkedPosts,setBookmarkedPosts]=useState({}); const [commentOpen,setCommentOpen]=useState({}); const [postText,setPostText]=useState(""); const [postSort,setPostSort]=useState("latest"); const [communityRefreshTick,setCommunityRefreshTick]=useState(0);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [joined, setJoined] = useState({});
@@ -702,7 +702,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
             supabase.from("community_post_likes").select("*",{count:"exact",head:true}).eq("post_id",p.id),
             supabase.from("community_comments").select("*",{count:"exact",head:true}).eq("post_id",p.id)
           ]);
-          return {id:p.id,name:p.author_name,role:p.author_role,time:new Date(p.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),text:p.body,likes:likes||0,comments:comments||0,avatar:p.author_avatar_url};
+          return {id:p.id,authorId:p.author_id,name:p.author_name,role:p.author_role,time:new Date(p.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),rawCreatedAt:p.created_at,text:p.body,likes:likes||0,comments:comments||0,avatar:p.author_avatar_url};
         })),
         user?.id ? supabase.from("community_post_likes").select("post_id").in("post_id",ids).eq("user_id",user.id) : Promise.resolve({data:[]}),
         user?.id ? supabase.from("community_post_bookmarks").select("post_id").in("post_id",ids).eq("user_id",user.id) : Promise.resolve({data:[]}),
@@ -715,7 +715,29 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       (commentRows.data||[]).forEach(c=>{(grouped[c.post_id] ||= []).push(c);});
       setCommentsByPost(grouped);
     })();
-  }, [selectedCommunity?.id,user?.id]);
+  }, [selectedCommunity?.id,user?.id,communityRefreshTick]);
+  useEffect(() => {
+    if (!selectedCommunity?.id || !supabase) return;
+    const channel = supabase
+      .channel("community-v22-" + selectedCommunity.id)
+      .on("postgres_changes",{event:"*",schema:"public",table:"community_posts",filter:"community_id=eq."+selectedCommunity.id},()=>setCommunityRefreshTick(v=>v+1))
+      .on("postgres_changes",{event:"*",schema:"public",table:"community_members",filter:"community_id=eq."+selectedCommunity.id},()=>setCommunityRefreshTick(v=>v+1))
+      .on("postgres_changes",{event:"*",schema:"public",table:"community_comments"},payload=>{
+        const postId=payload.new?.post_id || payload.old?.post_id;
+        if(postId && posts.some(p=>p.id===postId)) setCommunityRefreshTick(v=>v+1);
+      })
+      .on("postgres_changes",{event:"*",schema:"public",table:"community_post_likes"},payload=>{
+        const postId=payload.new?.post_id || payload.old?.post_id;
+        if(postId && posts.some(p=>p.id===postId)) setCommunityRefreshTick(v=>v+1);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedCommunity?.id, posts.map(p=>p.id).join(",")]);
+
+  const visiblePosts = [...posts].sort((a,b) => postSort === "popular"
+    ? (b.likes - a.likes) || (b.comments - a.comments) || (new Date(b.rawCreatedAt) - new Date(a.rawCreatedAt))
+    : new Date(b.rawCreatedAt) - new Date(a.rawCreatedAt));
+
   const filtered = communityCards.filter(item =>
     (category === "All" || item.category === category) &&
     (!search.trim() || (item.name+" "+item.desc+" "+item.category).toLowerCase().includes(search.toLowerCase()))
@@ -793,7 +815,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       community_id:selectedCommunity.id,author_id:user.id,author_name:currentName,author_role:isOwner?"OWNER":"MEMBER",author_avatar_url:avatar||null,body:postText.trim()
     }).select("*").single();
     if(error){showNotice(error.message||"Could not publish post.");return;}
-    setPosts(v=>[{id:data.id,name:data.author_name,role:data.author_role,time:new Date(data.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),text:data.body,likes:0,comments:0,avatar:data.author_avatar_url},...v]);
+    setPosts(v=>[{id:data.id,authorId:data.author_id,name:data.author_name,role:data.author_role,time:new Date(data.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}),rawCreatedAt:data.created_at,text:data.body,likes:0,comments:0,avatar:data.author_avatar_url},...v]);
     setPostText("");showNotice("Post published.");
   }
   async function addComment(postId){
@@ -806,6 +828,23 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     setPosts(v=>v.map(p=>p.id===postId?{...p,comments:p.comments+1}:p));
     setCommentDrafts(v=>({...v,[postId]:""}));
     showNotice("Comment added.");
+  }
+
+  async function deletePost(postId){
+    if(!supabase || !user?.id) return;
+    const {error}=await supabase.from("community_posts").delete().eq("id",postId).eq("author_id",user.id);
+    if(error){showNotice(error.message||"Could not delete post.");return;}
+    setPosts(v=>v.filter(p=>p.id!==postId));
+    showNotice("Post deleted.");
+  }
+
+  async function deleteComment(postId, commentId){
+    if(!supabase || !user?.id) return;
+    const {error}=await supabase.from("community_comments").delete().eq("id",commentId).eq("author_id",user.id);
+    if(error){showNotice(error.message||"Could not delete comment.");return;}
+    setCommentsByPost(v=>({...v,[postId]:(v[postId]||[]).filter(c=>c.id!==commentId)}));
+    setPosts(v=>v.map(p=>p.id===postId?{...p,comments:Math.max(0,p.comments-1)}:p));
+    showNotice("Comment deleted.");
   }
 
   async function toggleLike(id){
@@ -831,8 +870,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       <div className="community-cover"><div className="community-cover-art" style={{backgroundImage:"url("+community.image+")",backgroundSize:"cover",backgroundPosition:"center"}}></div><div className="community-header-card"><div className="community-logo">{community.icon?.startsWith("http")?<img src={community.icon} alt=""/>:community.icon}</div><div className="community-title-block"><h1>{community.name}</h1><p>{community.members} members <span>•</span> {community.privacy} <span>•</span> {community.category}</p><small>{community.desc}</small></div><div className="community-header-actions">{(() => { const isOwner = community.ownerId === user?.id || myCommunityIds.includes(community.id); const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id); return <button className={isOwner ? "community-join owner" : isMember ? "community-join joined" : "community-join"} onClick={()=>isOwner ? showNotice("This is your community.") : joinCommunity(community)}>{isOwner ? "★  My Community" : isMember ? "✓ Joined" : "Join Community"}</button>; })()}<button className="community-more">•••</button></div></div><nav className="community-tabs">{["Posts","About","Members","Events","Tickets"].map(tab=><button key={tab} className={activeCommunityTab===tab?"active":""} onClick={()=>setActiveCommunityTab(tab)}>{tab}</button>)}</nav></div>
       {activeCommunityTab==="Posts" && <>
       <section className="community-composer"><div className="community-composer-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-composer-body"><textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder={"Write something to the community, "+currentName.split(" ")[0]+"..."} rows={2}/><div className="community-composer-actions"><div><button onClick={()=>showNotice("Image posting will be connected in V2.2.")}>＋ Image</button><button onClick={()=>showNotice("Polls will be connected in V2.2.")}>▥ Poll</button><button onClick={()=>showNotice("Tagging will be connected in V2.2.")}>⌑ Tag</button></div><button className="community-post-button" onClick={addPost}>Post</button></div></div></section>
-      <div className="community-feed-filter"><button className="active">Latest</button><button onClick={()=>showNotice("Popular sorting will be connected in V2.2.")}>Popular</button><button onClick={()=>showNotice("Following will be connected in V2.2.")}>Following</button></div>
-      <section className="community-feed">{posts.map(post=><article className="community-post" key={post.id}><div className="community-post-avatar">{post.avatar?<img src={post.avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-post-body"><div className="community-post-head"><div><b>{post.name}</b><span>{post.role}</span><small>• {post.time}</small></div><button>•••</button></div><p className="community-post-text">{post.text}</p><div className="community-post-actions"><button className={likedPosts[post.id]?"active like":""} onClick={()=>toggleLike(post.id)}><Heart size={17} fill={likedPosts[post.id]?"currentColor":"none"}/>{post.likes}</button><button className={commentOpen[post.id]?"active":""} onClick={()=>setCommentOpen(v=>({...v,[post.id]:!v[post.id]}))}><MessageCircle size={17}/>{post.comments}</button><button className={bookmarkedPosts[post.id]?"active bookmark":""} onClick={()=>toggleBookmark(post.id)}><Bookmark size={17} fill={bookmarkedPosts[post.id]?"currentColor":"none"}/></button></div>{commentOpen[post.id]&&<div className="community-comment-wrap">{(commentsByPost[post.id]||[]).map(c=><div className="community-comment-item" key={c.id}><div className="community-comment-avatar">{c.author_avatar_url?<img src={c.author_avatar_url} alt=""/>:<UserRound size={15}/>}</div><div><b>{c.author_name}</b><p>{c.body}</p></div></div>)}<div className="community-comment-box"><div className="community-comment-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={15}/>}</div><input value={commentDrafts[post.id]||""} placeholder="Write a comment..." onChange={e=>setCommentDrafts(v=>({...v,[post.id]:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();addComment(post.id);}}}/><button onClick={()=>addComment(post.id)}>Post</button></div></div>}</div></article>)}</section>
+      <div className="community-feed-filter"><button className={postSort==="latest"?"active":""} onClick={()=>setPostSort("latest")}>Latest</button><button className={postSort==="popular"?"active":""} onClick={()=>setPostSort("popular")}>Popular</button></div>
+      <section className="community-feed">{visiblePosts.length ? visiblePosts.map(post=><article className="community-post" key={post.id}><div className="community-post-avatar">{post.avatar?<img src={post.avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-post-body"><div className="community-post-head"><div><b>{post.name}</b><span>{post.role}</span><small>• {post.time}</small></div>{post.authorId===user?.id ? <button className="community-delete-button" title="Delete post" onClick={()=>deletePost(post.id)}><Trash2 size={16}/></button> : <button className="community-more" aria-label="Post options">•••</button>}</div><p className="community-post-text">{post.text}</p><div className="community-post-actions"><button className={likedPosts[post.id]?"active like":""} onClick={()=>toggleLike(post.id)}><Heart size={17} fill={likedPosts[post.id]?"currentColor":"none"}/>{post.likes}</button><button className={commentOpen[post.id]?"active":""} onClick={()=>setCommentOpen(v=>({...v,[post.id]:!v[post.id]}))}><MessageCircle size={17}/>{post.comments}</button><button className={bookmarkedPosts[post.id]?"active bookmark":""} onClick={()=>toggleBookmark(post.id)}><Bookmark size={17} fill={bookmarkedPosts[post.id]?"currentColor":"none"}/></button></div>{commentOpen[post.id]&&<div className="community-comment-wrap">{(commentsByPost[post.id]||[]).map(c=><div className="community-comment-item" key={c.id}><div className="community-comment-avatar">{c.author_avatar_url?<img src={c.author_avatar_url} alt=""/>:<UserRound size={15}/>}</div><div><b>{c.author_name}</b><p>{c.body}</p></div>{c.author_id===user?.id&&<button className="community-comment-delete" title="Delete comment" onClick={()=>deleteComment(post.id,c.id)}><Trash2 size={14}/></button>}</div>)}<div className="community-comment-box"><div className="community-comment-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={15}/>}</div><input value={commentDrafts[post.id]||""} placeholder="Write a comment..." onChange={e=>setCommentDrafts(v=>({...v,[post.id]:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();addComment(post.id);}}}/><button onClick={()=>addComment(post.id)}>Post</button></div></div>}</div></article>)}</section>
       </>}
       {activeCommunityTab==="About" && <section className="community-detail-panel"><div className="community-detail-card"><h2>About this community</h2><p>{community.desc || "No description added yet."}</p><div className="community-about-grid"><div><span>Category</span><b>{community.category}</b></div><div><span>Privacy</span><b>{community.privacy}</b></div><div><span>Location</span><b>{community.city ? community.city+", "+community.state : "Not specified"}</b></div><div><span>Created</span><b>{community.createdAt ? new Date(community.createdAt).toLocaleDateString() : "—"}</b></div></div><h3>Community Rules</h3><ol className="community-rules">{(community.rules||"Be respectful and kind.").split(/\\n|\n/).filter(Boolean).map((r,i)=><li key={i}>{r}</li>)}</ol></div></section>}
       {activeCommunityTab==="Members" && <section className="community-detail-panel"><div className="community-detail-card"><div className="community-detail-head"><div><h2>Members</h2><p>{communityMembers.length} members</p></div><input value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} placeholder="Search members..." /></div><div className="community-members-list">{communityMembers.filter(m=>(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase())).map(m=><div className="community-member-item" key={m.id}><div className="community-member-avatar">{m.avatar_url?<img src={m.avatar_url} alt=""/>:<UserRound size={16}/>}</div><div><b>{m.username || "Member"}</b><small>{m.role}</small></div>{m.role==="OWNER"&&<em>Owner</em>}</div>)}</div>{!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No matching members.</div>}</div></section>}

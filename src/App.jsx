@@ -712,6 +712,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   useEffect(() => {
     if (!selectedCommunity?.id || !supabase) return;
     setActiveCommunityTab("Posts");
+    setMemberRoleFilter("ALL");
     (async () => {
       const [{data:postRows},{data:memberRows}] = await Promise.all([
         supabase.from("community_posts").select("*").eq("community_id",selectedCommunity.id).order("created_at",{ascending:false}),

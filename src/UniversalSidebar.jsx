@@ -1,4 +1,4 @@
-import { Heart, HeartHandshake, Home, LogOut, MessageCircle, Plus, Settings, Ticket, UserRound, Users } from "lucide-react";
+import { Bell, Heart, HeartHandshake, Home, LogOut, MessageCircle, Plus, Settings, Ticket, UserRound, Users } from "lucide-react";
 
 const listingSubItems = [
   ["TRAIN", "Train Ticket"],
@@ -13,6 +13,7 @@ const items = [
   ["Find People", Users],
   ["Communities", HeartHandshake],
   ["Messages", MessageCircle],
+  ["Notifications", Bell],
   ["My Listings", Ticket],
   ["Favorites", Heart],
   ["Profile", UserRound],

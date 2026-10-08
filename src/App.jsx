@@ -855,9 +855,9 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       return;
     }
     setLeavingCommunity(true);
-    const { error } = await supabase.rpc("leave_community", {
+    const { error } = await supabase.rpc("leave_community_v23", {
       p_community_id: selectedCommunity.id,
-      p_rating: saveFeedback && leaveRating ? leaveRating : null,
+      p_rating: saveFeedback && leaveRating ? Number(leaveRating) : null,
       p_review: saveFeedback && leaveReview.trim() ? leaveReview.trim() : null
     });
     setLeavingCommunity(false);

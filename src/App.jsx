@@ -835,12 +835,13 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     }
   }
 
-  function startLeaveCommunity() {
-    if (!selectedCommunity?.id) return;
-    if (selectedCommunity.ownerId === user?.id || myCommunityIds.includes(selectedCommunity.id)) {
+  function startLeaveCommunity(communityTarget = selectedCommunity) {
+    if (!communityTarget?.id) return;
+    if (communityTarget.ownerId === user?.id || myCommunityIds.includes(communityTarget.id)) {
       showNotice("Community owners cannot leave. Transfer ownership first.");
       return;
     }
+    if (!selectedCommunity?.id || selectedCommunity.id !== communityTarget.id) openCommunity(communityTarget);
     setLeaveStep("confirm");
     setLeaveRating(0);
     setLeaveReview("");
@@ -916,9 +917,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id);
     if (isOwner) { showNotice("This is your community."); return; }
     if (isMember) {
-      const { error } = await supabase.from("community_members").delete().eq("community_id",community.id).eq("user_id",user.id);
-      if (!error) { setJoined(v=>({...v,[community.name]:false})); setJoinedCommunityIds(v=>v.filter(id=>id!==community.id)); setCommunityCards(v=>v.map(c=>c.id===community.id?{...c,members:String(Math.max(0,Number(c.members)||0)-1)}:c)); }
-      else showNotice(error.message);
+      startLeaveCommunity(community);
       return;
     }
     if (community.privacy === "Private") {

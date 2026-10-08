@@ -752,3 +752,10 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .community-member-menu-wrap{position:relative}.community-member-menu-button{border:0;background:transparent;color:#77788b;font-weight:900;cursor:pointer;padding:6px}.community-member-menu{position:absolute;right:0;top:32px;min-width:145px;background:#fff;border:1px solid #e1dfea;border-radius:9px;box-shadow:0 12px 28px #29234b18;z-index:50;padding:5px}.community-member-menu button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:9px 10px;border-radius:6px;color:#45465b;font:700 10px "Manrope";cursor:pointer}.community-member-menu button:hover{background:#f4f1ff;color:#6336ec}.community-member-menu button.danger:hover{background:#fff0f0;color:#c0392b}
 .community-member-item{grid-template-columns:38px minmax(0,1fr) auto auto}.community-member-item .admin-badge{background:#e8f1ff;color:#3566a8}.community-member-item .member-badge{background:#f2f2f6;color:#68697b}
 @media(max-width:650px){.community-notification-panel{position:fixed;right:10px;top:58px}.community-request-item{grid-template-columns:34px minmax(0,1fr)}.community-request-actions{grid-column:2}.community-member-item{grid-template-columns:34px minmax(0,1fr) auto}.community-member-menu-wrap{grid-column:3}.community-member-item em{display:none}}
+
+.community-member-role-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:4px 0 16px;padding:4px;background:#f7f6fb;border:1px solid #eceaf2;border-radius:11px}
+.community-member-role-tabs button{border:0;background:transparent;border-radius:8px;padding:8px 12px;color:#68697c;font:800 10px "Manrope";cursor:pointer;display:flex;align-items:center;gap:6px}
+.community-member-role-tabs button span{min-width:18px;padding:2px 5px;border-radius:10px;background:#e9e7f1;color:#77788a;font-size:8px}
+.community-member-role-tabs button.active{background:#fff;color:#6336ec;box-shadow:0 2px 7px #29234b12}
+.community-member-role-tabs button.active span{background:#eee8ff;color:#6336ec}
+@media(max-width:650px){.community-member-role-tabs{overflow-x:auto;flex-wrap:nowrap}.community-member-role-tabs button{white-space:nowrap}}

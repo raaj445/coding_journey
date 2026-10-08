@@ -735,3 +735,20 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   .community-detail-head{align-items:flex-start;flex-direction:column}
   .community-detail-head input{width:100%}
 }
+
+
+/* V2.2 management, notifications and responsive polish */
+.community-notification-wrap{position:relative}
+.community-notification-panel{position:absolute;right:0;top:43px;width:340px;max-width:calc(100vw - 24px);background:#fff;border:1px solid #e3e1eb;border-radius:12px;box-shadow:0 16px 40px #29234b20;z-index:80;overflow:hidden}
+.community-notification-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #eeeef3}
+.community-notification-head b{font:800 13px "Manrope";color:#27283e}.community-notification-head button{border:0;background:none;color:#6336ec;font:700 10px "Manrope";cursor:pointer}
+.community-notification-item{padding:11px 14px;border-bottom:1px solid #f0eff4}.community-notification-item.unread{background:#f7f4ff}.community-notification-item b{display:block;font:800 11px "Manrope";color:#2b2c43}.community-notification-item p{margin:3px 0;color:#68697c;font-size:10px;line-height:1.35}.community-notification-item small{color:#999aaa;font-size:8px}
+.community-feed-count{margin-left:auto;color:#9293a2;font-size:10px;padding:7px 4px}
+.community-join.pending{background:#fff8e7;color:#9a6900;border-color:#f0ce72;cursor:default}
+.community-requests-box{margin:0 0 15px;border:1px solid #e5e0f5;background:#faf8ff;border-radius:11px;padding:13px}
+.community-requests-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.community-requests-head h3{margin:0;font:800 14px "Manrope";color:#303149}.community-requests-head p{margin:3px 0 0;color:#8b8c9c;font-size:10px}
+.community-request-item{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #ece9f4}.community-request-item>div:nth-child(2){display:grid;gap:3px}.community-request-item b{font:700 11px "Manrope";color:#303149}.community-request-item small{font-size:9px;color:#9293a2}
+.community-request-actions{display:flex;gap:5px}.community-request-actions button{border:1px solid #7b5aed;background:#fff;color:#6336ec;border-radius:7px;padding:7px 9px;font:800 9px "Manrope";cursor:pointer}.community-request-actions button:last-child{border-color:#e0dce8;color:#6e6f80}
+.community-member-menu-wrap{position:relative}.community-member-menu-button{border:0;background:transparent;color:#77788b;font-weight:900;cursor:pointer;padding:6px}.community-member-menu{position:absolute;right:0;top:32px;min-width:145px;background:#fff;border:1px solid #e1dfea;border-radius:9px;box-shadow:0 12px 28px #29234b18;z-index:50;padding:5px}.community-member-menu button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:9px 10px;border-radius:6px;color:#45465b;font:700 10px "Manrope";cursor:pointer}.community-member-menu button:hover{background:#f4f1ff;color:#6336ec}.community-member-menu button.danger:hover{background:#fff0f0;color:#c0392b}
+.community-member-item{grid-template-columns:38px minmax(0,1fr) auto auto}.community-member-item .admin-badge{background:#e8f1ff;color:#3566a8}.community-member-item .member-badge{background:#f2f2f6;color:#68697b}
+@media(max-width:650px){.community-notification-panel{position:fixed;right:10px;top:58px}.community-request-item{grid-template-columns:34px minmax(0,1fr)}.community-request-actions{grid-column:2}.community-member-item{grid-template-columns:34px minmax(0,1fr) auto}.community-member-menu-wrap{grid-column:3}.community-member-item em{display:none}}

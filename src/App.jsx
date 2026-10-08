@@ -643,6 +643,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [notifications, setNotifications] = useState([]);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [postSearch, setPostSearch] = useState("");
+  const [pendingRequestIds, setPendingRequestIds] = useState([]);
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
   const [communityCards, setCommunityCards] = useState([
@@ -674,9 +675,11 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       }
       if (user?.id) {
         const { data: memberships } = await supabase.from("community_members").select("community_id,role").eq("user_id",user.id);
+        const { data: requests } = await supabase.from("community_join_requests").select("community_id,status").eq("user_id",user.id).eq("status","PENDING");
         if (alive) {
           setMyCommunityIds((memberships||[]).filter(m=>m.role==="OWNER").map(m=>m.community_id));
           setJoinedCommunityIds((memberships||[]).map(m=>m.community_id));
+          setPendingRequestIds((requests||[]).map(r=>r.community_id));
         }
       }
     })();
@@ -825,7 +828,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       return;
     }
     if (community.privacy === "Private") {
-      const { error } = await supabase.from("community_join_requests").upsert({community_id:community.id,user_id:user.id,status:"PENDING"},{onConflict:"community_id,user_id"});
+      const { error } = await supabase.from("community_join_requests").upsert({community_id:community.id,user_id:user.id,status:"PENDING",requester_name:currentName,requester_avatar_url:avatar||null},{onConflict:"community_id,user_id"});
       if (!error) showNotice("Join request sent.");
       else showNotice(error.message);
       return;
@@ -934,7 +937,15 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     }
     showNotice(was?"Removed from bookmarks.":"Saved to bookmarks.");
   }
-  if(selectedCommunity){const community=selectedCommunity;return (<main className="community-shell">
+  if(selectedCommunity){
+    const community=selectedCommunity;
+    const currentMember=communityMembers.find(m=>m.user_id===user?.id);
+    const isOwnerCurrent=community.ownerId===user?.id || myCommunityIds.includes(community.id) || currentMember?.role==="OWNER";
+    const isAdminCurrent=currentMember?.role==="ADMIN";
+    const canManageMembers=isOwnerCurrent || isAdminCurrent;
+    const unreadNotifications=notifications.filter(n=>!n.read_at).length;
+    const filteredVisiblePosts=visiblePosts.filter(p=>!postSearch.trim() || (p.text+" "+p.name+" "+p.role).toLowerCase().includes(postSearch.toLowerCase()));
+    return (<main className="community-shell">
     <header className="community-topbar"><button className="community-brand" onClick={()=>setSelectedCommunity(null)}><span className="community-brand-mark"><Users size={19} fill="currentColor"/></span><span>Connect<span>Hub</span></span></button><div className="community-search"><Search size={17}/><input placeholder="Search communities, posts, or topics..."/></div><div className="community-top-actions"><button onClick={()=>onNavigate?.("Favorites")}><Heart size={20}/></button><button><MessageCircle size={20}/></button><button className="community-notification"><Bell size={19}/><i/></button><button className="community-profile-mini"><span>{avatar?<img src={avatar} alt=""/>:<UserRound size={17}/>}</span><b>{currentName.split(" ")[0]}</b><ChevronDown size={15}/></button></div></header>
     <div className="community-layout"><UniversalSidebar activeNav="Communities" onNavigate={onNavigate} onLogout={onLogout}/><section className="community-main">
       <button className="community-back-dashboard" onClick={()=>setSelectedCommunity(null)}><ArrowRight size={17} style={{transform:"rotate(180deg)"}}/> Back to Community Dashboard</button>

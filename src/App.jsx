@@ -1098,7 +1098,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
         </>}
       </div>
     </div>
-  );
+  ) : null;
   if(selectedCommunity){
     const community=selectedCommunity;
     const currentMember=communityMembers.find(m=>m.user_id===user?.id);

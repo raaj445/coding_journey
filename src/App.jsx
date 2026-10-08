@@ -7,6 +7,7 @@ import TrainArtwork from "./TrainArtwork";
 import FindTicketsPage from "./FindTicketsPage";
 import UniversalSidebar from "./UniversalSidebar";
 import ProfilePage from "./ProfilePage";
+import NotificationsPage from "./NotificationsPage";
 
 const eventCards = [
   { title: "Concerts", image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=700&q=85", icon: Music2 },
@@ -1154,6 +1155,7 @@ function Dashboard({ user, onLogout }) {
   if (activeNav === "Find Tickets") return <FindTicketsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Favorites") return <FavoritesPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Profile") return <ProfilePage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={onLogout} />;
+  if (activeNav === "Notifications") return <NotificationsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={onLogout} />;
   if (activeNav === "Communities") return <CommunitiesPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "Create Listing") return <CreateListingPage activeSub="TRAIN" onBack={() => setActiveNav("Home")} onMovie={() => setActiveNav("Movie Ticket")} onConcert={() => setActiveNav("Concert Ticket")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
   if (activeNav === "My Listings") return <MyListingsPage user={user} onBack={() => setActiveNav("Home")} onNavigate={setActiveNav} onLogout={async () => { if (supabase) await supabase.auth.signOut(); setUser(null); }} />;
@@ -1189,7 +1191,7 @@ function Dashboard({ user, onLogout }) {
         <div className="top-actions">
           <button className="post-button" onClick={() => setActiveNav("Create Listing")}><Plus size={17} /> Post</button>
           <button className="icon-button" aria-label="Messages"><MessageCircle size={20} /></button><button className="icon-button dashboard-favorite-button" aria-label="Favorites" onClick={() => setActiveNav("Favorites")}><Heart size={20} fill={favoriteCount ? "currentColor" : "none"} /><i>{favoriteCount > 99 ? "99+" : favoriteCount}</i></button>
-          <button className="icon-button notification-button" aria-label="Notifications"><Bell size={20} /><i /></button>
+          <button className="icon-button notification-button" aria-label="Notifications" onClick={() => setActiveNav("Notifications")}><Bell size={20} /><i /></button>
           <button className="profile-mini"><span className="avatar">{avatar ? <img src={avatar} alt="" /> : <UserRound size={18} />}</span><b>{firstName}</b><ChevronDown size={16} /></button>
           <button className="mobile-menu" aria-label="Menu"><Menu size={21} /></button>
         </div>

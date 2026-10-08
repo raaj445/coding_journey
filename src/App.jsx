@@ -781,8 +781,6 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
           <div className="community-category-pills">{categories.map(item => <button key={item} className={category===item ? "active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
           <div className="communities-dashboard-columns">
             <div>
-              <div className="communities-dashboard-columns">
-            <div>
               <div className="community-discover-grid">
                 {filtered.map(item => {
                   const isOwner = item.ownerId === user?.id || myCommunityIds.includes(item.id);

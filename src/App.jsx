@@ -766,9 +766,13 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
 
   async function joinCommunity(community) {
     if (!supabase || !user?.id || !community?.id) { setJoined(v=>({...v,[community.name]:!v[community.name]})); return; }
-    if (joined[community.name]) {
+    const isOwner = community.ownerId === user.id || myCommunityIds.includes(community.id);
+    const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id);
+    if (isOwner) { showNotice("This is your community."); return; }
+    if (isMember) {
       const { error } = await supabase.from("community_members").delete().eq("community_id",community.id).eq("user_id",user.id);
-      if (!error) setJoined(v=>({...v,[community.name]:false})); setJoinedCommunityIds(v=>v.filter(id=>id!==community.id)); setCommunityCards(v=>v.map(c=>c.id===community.id?{...c,members:String(Math.max(0,Number(c.members)||0)-1)}:c));
+      if (!error) { setJoined(v=>({...v,[community.name]:false})); setJoinedCommunityIds(v=>v.filter(id=>id!==community.id)); setCommunityCards(v=>v.map(c=>c.id===community.id?{...c,members:String(Math.max(0,Number(c.members)||0)-1)}:c)); }
+      else showNotice(error.message);
       return;
     }
     if (community.privacy === "Private") {

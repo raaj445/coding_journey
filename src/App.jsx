@@ -650,6 +650,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [communityReviews, setCommunityReviews] = useState([]);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [leaveCommunityTarget, setLeaveCommunityTarget] = useState(null);
   const [leaveStep, setLeaveStep] = useState("confirm");
   const [leaveRating, setLeaveRating] = useState(0);
   const [leaveReview, setLeaveReview] = useState("");
@@ -841,6 +842,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       showNotice("Community owners cannot leave. Transfer ownership first.");
       return;
     }
+    setLeaveCommunityTarget(communityTarget);
     if (!selectedCommunity?.id || selectedCommunity.id !== communityTarget.id) openCommunity(communityTarget);
     setLeaveStep("confirm");
     setLeaveRating(0);
@@ -849,29 +851,52 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   }
 
   async function submitLeaveCommunity(saveFeedback) {
-    if (!selectedCommunity?.id || !supabase || leavingCommunity) return;
+    const target = leaveCommunityTarget || selectedCommunity;
+    if (!target?.id || !supabase || leavingCommunity) return;
     if (saveFeedback && leaveReview.trim() && !leaveRating) {
       showNotice("Choose a rating before submitting feedback.");
       return;
     }
+
     setLeavingCommunity(true);
-    const { error } = await supabase.rpc("leave_community_v23", {
-      p_community_id: selectedCommunity.id,
+    const { data, error } = await supabase.rpc("leave_community_v23", {
+      p_community_id: target.id,
       p_rating: saveFeedback && leaveRating ? Number(leaveRating) : null,
       p_review: saveFeedback && leaveReview.trim() ? leaveReview.trim() : null
     });
     setLeavingCommunity(false);
+
     if (error) {
-      showNotice(error.message || "Could not leave this community.");
+      console.error("leave_community_v23 failed", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        communityId: target.id
+      });
+      showNotice(error.message || error.details || "Could not leave this community.");
       return;
     }
-    const leftId = selectedCommunity.id;
-    setJoined(v => ({ ...v, [selectedCommunity.name]: false }));
+
+    if (!data?.left) {
+      showNotice("The community was not left. Please try again.");
+      return;
+    }
+
+    const leftId = target.id;
+    setJoined(v => ({ ...v, [target.name]: false }));
     setJoinedCommunityIds(v => v.filter(id => id !== leftId));
-    setCommunityCards(v => v.map(item => item.id === leftId ? { ...item, members: String(Math.max(0, Number(item.members || 0) - 1)) } : item));
+    setCommunityCards(v => v.map(item =>
+      item.id === leftId
+        ? { ...item, members: String(Math.max(0, Number(item.members || 0) - 1)) }
+        : item
+    ));
     setLeaveModalOpen(false);
+    setLeaveCommunityTarget(null);
     closeCommunity();
-    showNotice(saveFeedback && leaveRating ? "You left the community. Thanks for the feedback!" : "You left the community.");
+    showNotice(saveFeedback && leaveRating
+      ? "You left the community. Thanks for the feedback!"
+      : "You left the community.");
   }
 
   function handleFile(event, setter, field) {
@@ -1151,7 +1176,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
         )}
       </div>
       {notice && <div className="community-toast">{notice}</div>}
-      {leaveModalOpen && <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!leavingCommunity)setLeaveModalOpen(false)}}><div className="community-leave-modal"><button className="community-modal-close" onClick={()=>!leavingCommunity&&setLeaveModalOpen(false)}><X size={17}/></button>{leaveStep==="confirm"?<><div className="community-modal-icon danger">↪</div><h2>Leave {community.name}?</h2><p>You will lose access to community posts, members and discussions until you join again.</p><div className="community-modal-actions"><button onClick={()=>setLeaveModalOpen(false)}>Stay</button><button className="danger" onClick={()=>setLeaveStep("feedback")}>Continue</button></div></>:<><div className="community-modal-icon">★</div><h2>How was your experience?</h2><p>Your feedback is optional and helps improve this community.</p><div className="community-rating-input">{[1,2,3,4,5].map(star=><button type="button" key={star} className={star<=leaveRating?"active":""} onClick={()=>setLeaveRating(star)} aria-label={star+" star"}><Star size={28} fill={star<=leaveRating?"currentColor":"none"}/></button>)}</div><textarea value={leaveReview} onChange={e=>setLeaveReview(e.target.value)} maxLength={500} placeholder="Optional feedback..."/><small className="community-review-count">{leaveReview.length}/500</small><div className="community-modal-actions stacked"><button onClick={()=>submitLeaveCommunity(false)} disabled={leavingCommunity}>Skip & Leave</button><button className="primary" onClick={()=>submitLeaveCommunity(true)} disabled={leavingCommunity||!leaveRating}>{leavingCommunity?"Leaving...":"Submit & Leave"}</button></div></>}</div></div>}
+      {leaveModalOpen && <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!leavingCommunity){setLeaveModalOpen(false);setLeaveCommunityTarget(null);}}}><div className="community-leave-modal"><button type="button" className="community-modal-close" onClick={()=>{if(!leavingCommunity){setLeaveModalOpen(false);setLeaveCommunityTarget(null);}}}><X size={17}/></button>{leaveStep==="confirm"?<><div className="community-modal-icon danger">↪</div><h2>Leave {leaveCommunityTarget?.name || community.name}?</h2><p>You will lose access to community posts, members and discussions until you join again.</p><div className="community-modal-actions"><button type="button" onClick={()=>{setLeaveModalOpen(false);setLeaveCommunityTarget(null);}}>Stay</button><button type="button" className="danger" onClick={()=>setLeaveStep("feedback")}>Continue</button></div></>:<><div className="community-modal-icon">★</div><h2>How was your experience?</h2><p>Your feedback is optional and helps improve this community.</p><div className="community-rating-input">{[1,2,3,4,5].map(star=><button type="button" key={star} className={star<=leaveRating?"active":""} onClick={()=>setLeaveRating(star)} aria-label={star+" star"}><Star size={28} fill={star<=leaveRating?"currentColor":"none"}/></button>)}</div><textarea value={leaveReview} onChange={e=>setLeaveReview(e.target.value)} maxLength={500} placeholder="Optional feedback..."/><small className="community-review-count">{leaveReview.length}/500</small><div className="community-modal-actions stacked"><button type="button" onClick={()=>submitLeaveCommunity(false)} disabled={leavingCommunity}>Skip & Leave</button><button type="button" className="primary" onClick={()=>submitLeaveCommunity(true)} disabled={leavingCommunity||!leaveRating}>{leavingCommunity?"Leaving...":"Submit & Leave"}</button></div></>}</div></div>}
     </main>
   );
 }

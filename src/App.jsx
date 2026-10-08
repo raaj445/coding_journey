@@ -781,6 +781,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
           <div className="community-category-pills">{categories.map(item => <button key={item} className={category===item ? "active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
           <div className="communities-dashboard-columns">
             <div>
+              <div className="communities-dashboard-columns">
+            <div>
               <div className="community-discover-grid">
                 {filtered.map(item => {
                   const isOwner = item.ownerId === user?.id || myCommunityIds.includes(item.id);
@@ -788,7 +790,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
                   return <article className="community-discover-card" key={item.id || item.name} onClick={(event)=>{if(event.target.closest("button"))return;setSelectedCommunity(item);}}>
                     <div className="community-card-cover" style={{backgroundImage:"url("+item.image+")"}}><div className="community-card-menu">•••</div></div>
                     <div className="community-card-content">
-                      <div className="community-card-icon">{item.icon}</div><h2>{item.name}</h2>
+                      <div className="community-card-icon">{item.icon}</div>
+                      <h2>{item.name}</h2>
                       <p className="community-card-meta">{item.members} members <span>•</span> {item.privacy}</p>
                       <p className="community-card-description">{item.desc}</p>
                       <button className={isOwner ? "community-card-join owner" : isJoined ? "community-card-join joined" : "community-card-join"} onClick={()=>isOwner ? setSelectedCommunity(item) : joinCommunity(item)}>{isOwner ? "★  My Community" : isJoined ? "✓  Joined" : "Join Community"}</button>
@@ -796,7 +799,21 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
                   </article>;
                 })}
               </div>
-          {!filtered.length && <div className="community-discover-empty"><Search size={28}/><b>No communities found</b><span>Try another search or category.</span></div>}
+              {!filtered.length && <div className="community-discover-empty"><Search size={28}/><b>No communities found</b><span>Try another search or category.</span></div>}
+            </div>
+            <aside className="communities-dashboard-right">
+              <section className="my-communities-card">
+                <div className="my-communities-head"><h2>My Communities</h2><button onClick={()=>showNotice("Showing all your communities.")}>View all <ArrowRight size={14}/></button></div>
+                <div className="my-community-tabs"><button className="active">Created by me ({communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).length})</button><button>Joined ({Math.max(0,joinedCommunityIds.filter(id=>!myCommunityIds.includes(id)).length)})</button></div>
+                <div className="my-community-list">
+                  {communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).slice(0,3).map(c=><button className="my-community-item" key={c.id||c.name} onClick={()=>setSelectedCommunity(c)}><div className="my-community-thumb" style={{backgroundImage:"url("+c.image+")"}}></div><div className="my-community-copy"><b>{c.name}</b><span>{c.members} members • {c.privacy}</span></div><em>Owner</em><span className="my-community-dots">•••</span></button>)}
+                  {!communityCards.some(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)) && <div className="my-community-empty">Create your first community and it will appear here.</div>}
+                </div>
+              </section>
+              <section className="my-activity-card"><h2>Your Community Activity</h2><div className="activity-stats"><div><b>{communityCards.filter(c=>c.ownerId===user?.id || myCommunityIds.includes(c.id)).length}</b><span>My Community</span></div><div><b>{Math.max(0,joinedCommunityIds.filter(id=>!myCommunityIds.includes(id)).length)}</b><span>Joined Communities</span></div><div><b>0</b><span>Posts</span></div><div><b>0</b><span>Likes Received</span></div></div></section>
+              <section className="recommended-community-card"><div className="my-communities-head"><h2>Recommended for You</h2><button onClick={()=>showNotice("Showing recommended communities.")}>View all <ArrowRight size={14}/></button></div><div className="recommended-row"><span>🎓</span><div><b>Kharagpur Students</b><small>1,210 members</small></div><button onClick={()=>showNotice("Recommendation join will be connected next.")}>Join</button></div><div className="recommended-row"><span>🚆</span><div><b>Travel Buddies India</b><small>3,560 members</small></div><button onClick={()=>showNotice("Recommendation join will be connected next.")}>Join</button></div><div className="recommended-row"><span>🎓</span><div><b>MTech Aspirants</b><small>980 members</small></div><button onClick={()=>showNotice("Recommendation join will be connected next.")}>Join</button></div></section>
+            </aside>
+          </div>
         </section>
 
         {createOpen && (

@@ -825,3 +825,21 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   .community-review-summary{align-items:flex-start}
   .community-modal-actions.stacked{grid-template-columns:1fr}
 }
+
+/* Community V2.3 — invite members */
+.community-members-header-actions{display:flex;align-items:center;gap:8px;min-width:0}
+.community-members-header-actions input{min-width:150px}
+.community-invite-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;border:1px solid #e2dcfb;background:#f5f1ff;color:#6336ec;border-radius:9px;padding:10px 12px;font:800 10px "Manrope";cursor:pointer;transition:background .18s ease,border-color .18s ease}
+.community-invite-button:hover{background:#ece5ff;border-color:#cfc1ff}
+.community-invite-modal{max-width:480px}
+.community-invite-link-label{display:block;text-align:left;margin:22px 0 7px;color:#505168;font:800 10px "Manrope"}
+.community-invite-link-input{display:block;box-sizing:border-box;width:100%;min-width:0;border:1px solid #dedce7;border-radius:9px;padding:12px;color:#55566b;background:#faf9fd;font:500 10px "DM Sans";outline:none}
+.community-invite-link-input:focus{border-color:#8b6bea;box-shadow:0 0 0 3px #eee9ff}
+.community-invite-actions{display:grid;grid-template-columns:1fr 1fr}
+.community-invite-actions button{display:flex;align-items:center;justify-content:center;gap:7px}
+@media(max-width:650px){
+  .community-members-detail-head{align-items:stretch;gap:12px}
+  .community-members-header-actions{flex-direction:column;align-items:stretch;width:100%}
+  .community-members-header-actions input{box-sizing:border-box;width:100%;min-width:0}
+  .community-invite-actions{grid-template-columns:1fr}
+}

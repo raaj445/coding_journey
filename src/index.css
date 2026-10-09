@@ -843,3 +843,18 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
   .community-members-header-actions input{box-sizing:border-box;width:100%;min-width:0}
   .community-invite-actions{grid-template-columns:1fr}
 }
+
+/* Community V2.3 — editable community rules */
+.community-rules-card .community-side-title-row>button{border:1px solid #e2dcfb;background:#f5f1ff;color:#6336ec;border-radius:8px;padding:7px 10px;font:800 10px "Manrope";cursor:pointer}
+.community-rules-editor{margin-top:12px}
+.community-rules-editor>p{margin:0 0 8px;color:#85869a;font-size:10px;line-height:1.5}
+.community-rules-editor textarea{display:block;width:100%;box-sizing:border-box;resize:vertical;min-height:145px;border:1px solid #dedce7;border-radius:9px;padding:11px;color:#383950;background:#fff;font:500 11px/1.6 "DM Sans";outline:none}
+.community-rules-editor textarea:focus{border-color:#8b6bea;box-shadow:0 0 0 3px #eee9ff}
+.community-rules-editor>small{display:block;text-align:right;margin-top:5px;color:#9a9baa;font-size:9px}
+.community-rules-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.community-rules-actions button{border:1px solid #dedce7;background:#fff;color:#646578;border-radius:8px;padding:9px 12px;font:800 10px "Manrope";cursor:pointer}
+.community-rules-actions button.primary{background:#6336ec;border-color:#6336ec;color:#fff}
+.community-rules-actions button:disabled{opacity:.55;cursor:not-allowed}
+.community-rules-empty{margin:10px 0 0;color:#85869a;font-size:10px;line-height:1.6}
+.community-rules{padding-left:18px}
+.community-rules li{overflow-wrap:anywhere;white-space:pre-wrap}

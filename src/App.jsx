@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight, CalendarDays, Trash2, Star, Share2, X } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Users, Ticket, MapPin, MessageCircle, Mail, LockKeyhole, ShieldCheck, Music2, Trophy, PartyPopper, Heart, ChevronDown, Sparkles, Search, Bell, Bookmark, UserRound, Settings, Home, Plus, HeartHandshake, Menu, LogOut, ArrowUpRight, CalendarDays, Trash2, Star, Share2, X, Copy, UserPlus } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import MovieTicketListingPage from "./MovieTicketListingPage";
 import ConcertTicketListingPage from "./ConcertTicketListingPage";
@@ -655,6 +655,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [leaveRating, setLeaveRating] = useState(0);
   const [leaveReview, setLeaveReview] = useState("");
   const [leavingCommunity, setLeavingCommunity] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
   const [communityCards, setCommunityCards] = useState([
@@ -815,6 +817,41 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     const url = new URL(window.location.href);
     url.searchParams.delete("community");
     window.history.replaceState({}, "", url.href);
+  }
+
+  function openInviteModal(community) {
+    if (!community?.id) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("community", community.id);
+    setInviteLink(url.toString());
+    setInviteModalOpen(true);
+  }
+
+  async function copyInviteLink() {
+    if (!inviteLink) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteLink);
+        showNotice("Invite link copied.");
+      } else {
+        window.prompt("Copy this invite link:", inviteLink);
+      }
+    } catch (error) {
+      showNotice("Could not copy the invite link. Please copy it manually.");
+    }
+  }
+
+  async function shareInviteLink() {
+    if (!inviteLink || !selectedCommunity) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Join " + selectedCommunity.name + " on ConnectHub", text: "You’re invited to " + selectedCommunity.name + " on ConnectHub.", url: inviteLink });
+      } else {
+        await copyInviteLink();
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") showNotice("Could not share the invite link.");
+    }
   }
 
   async function shareCommunity(community) {
@@ -1056,6 +1093,22 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     }
     showNotice(was?"Removed from bookmarks.":"Saved to bookmarks.");
   }
+  const inviteModal = inviteModalOpen && selectedCommunity ? (
+    <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setInviteModalOpen(false);}}>
+      <div className="community-leave-modal community-invite-modal" role="dialog" aria-modal="true" aria-labelledby="community-invite-title">
+        <button type="button" className="community-modal-close" aria-label="Close invite dialog" onClick={()=>setInviteModalOpen(false)}><X size={17}/></button>
+        <div className="community-modal-icon"><UserPlus size={25}/></div>
+        <h2 id="community-invite-title">Invite people to {selectedCommunity.name}</h2>
+        <p>Share this link so people can open the community. Private communities still require approval to join.</p>
+        <label className="community-invite-link-label" htmlFor="community-invite-link">Community invite link</label>
+        <input id="community-invite-link" className="community-invite-link-input" readOnly value={inviteLink} onFocus={e=>e.target.select()} />
+        <div className="community-modal-actions community-invite-actions">
+          <button type="button" onClick={copyInviteLink}><Copy size={16}/> Copy link</button>
+          <button type="button" className="primary" onClick={shareInviteLink}><Share2 size={16}/> Share invite</button>
+        </div>
+      </div>
+    </div>
+  ) : null;
   const leaveModal = leaveModalOpen && leaveCommunityTarget ? (
     <div className="community-modal-backdrop" onMouseDown={e=>{
       if(e.target===e.currentTarget&&!leavingCommunity){
@@ -1119,7 +1172,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       </>}
       {activeCommunityTab==="About" && <section className="community-detail-panel"><div className="community-detail-card"><h2>About this community</h2><p>{community.desc || "No description added yet."}</p><div className="community-about-grid"><div><span>Category</span><b>{community.category}</b></div><div><span>Privacy</span><b>{community.privacy}</b></div><div><span>Location</span><b>{community.city ? community.city+", "+community.state : "Not specified"}</b></div><div><span>Created</span><b>{community.createdAt ? new Date(community.createdAt).toLocaleDateString() : "—"}</b></div></div><div className="community-review-summary"><div><span className="community-review-score">{communityReviews.length ? (communityReviews.reduce((sum,r)=>sum+Number(r.rating||0),0)/communityReviews.length).toFixed(1) : "—"}</span><div className="community-review-stars">{[1,2,3,4,5].map(star=><Star key={star} size={15} fill={communityReviews.length && star <= Math.round(communityReviews.reduce((sum,r)=>sum+Number(r.rating||0),0)/communityReviews.length) ? "currentColor" : "none"}/>)}</div><small>{communityReviews.length} review{communityReviews.length===1?"":"s"}</small></div><div className="community-review-copy"><b>Community rating</b><span>Ratings and feedback from people who have left the community.</span></div></div><h3>Reviews</h3>{reviewLoading ? <div className="community-empty-inline">Loading reviews...</div> : communityReviews.length ? <div className="community-review-list">{communityReviews.slice(0,6).map(review=><article className="community-review-item" key={review.id}><div className="community-review-avatar"><UserRound size={15}/></div><div><div className="community-review-head"><b>Community member</b><span>{[1,2,3,4,5].map(star=><Star key={star} size={12} fill={star<=review.rating?"currentColor":"none"}/>)}</span></div>{review.review&&<p>{review.review}</p>}<small>{new Date(review.created_at).toLocaleDateString()}</small></div></article>)}</div> : <div className="community-empty-inline">No reviews yet.</div>}<h3>Community Rules</h3><ol className="community-rules">{(community.rules||"Be respectful and kind.").split(/\\n|\n/).filter(Boolean).map((r,i)=><li key={i}>{r}</li>)}</ol></div></section>}
       {activeCommunityTab==="Members" && <section className="community-detail-panel"><div className="community-detail-card">
-      <div className="community-detail-head"><div><h2>Members</h2><p>{communityMembers.length} members</p></div><input value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} placeholder="Search members..." /></div>
+      <div className="community-detail-head community-members-detail-head"><div><h2>Members</h2><p>{communityMembers.length} members</p></div><div className="community-members-header-actions"><input value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} placeholder="Search members..." /><button type="button" className="community-invite-button" onClick={()=>openInviteModal(community)}><UserPlus size={16}/> Invite Members</button></div></div>
       <div className="community-member-role-tabs">
         {[
           ["ALL","All",communityMembers.length],
@@ -1138,7 +1191,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       {!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No members in this category.</div>}
       </div></section>}{activeCommunityTab==="Events" && <section className="community-empty-tab"><div className="community-empty-icon">🎉</div><h2>No events yet</h2><p>Community events will appear here. Event creation is planned for V2.2.</p></section>}
       {activeCommunityTab==="Tickets" && <section className="community-empty-tab"><div className="community-empty-icon">🎟️</div><h2>No community tickets yet</h2><p>Ticket posts connected to this community will appear here in a later release.</p></section>}
-    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}      {leaveModal}
+    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card"><h2>Rules</h2><ol className="community-rules"><li>Be respectful and kind.</li><li>No spam or irrelevant posts.</li><li>No fraudulent listings.</li><li>Keep discussions constructive.</li><li>Follow community guidelines.</li></ol></section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}      {inviteModal}{leaveModal}
     </main>);}
   return (
     <main className="communities-discover-shell">

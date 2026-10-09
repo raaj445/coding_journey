@@ -830,6 +830,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     if (!community?.id) return;
     const url = new URL(window.location.href);
     url.searchParams.set("community", community.id);
+    url.searchParams.set("invite", "1");
     setInviteLink(url.toString());
     setInviteModalOpen(true);
   }
@@ -1024,7 +1025,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       startLeaveCommunity(community);
       return;
     }
-    if (community.privacy === "Private") {
+    const isInviteRequest = new URLSearchParams(window.location.search).get("invite") === "1";
+    if (community.privacy === "Private" || isInviteRequest) {
       const { error } = await supabase.from("community_join_requests").upsert({community_id:community.id,user_id:user.id,status:"PENDING",requester_name:currentName,requester_avatar_url:avatar||null},{onConflict:"community_id,user_id"});
       if (!error) showNotice("Join request sent.");
       else showNotice(error.message);

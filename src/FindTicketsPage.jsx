@@ -23,6 +23,10 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
   const [stateCities,setStateCities]=useState({});
   const [favorites,setFavorites]=useState([]);
   const [favoriteBusy,setFavoriteBusy]=useState("");
+  const [reportTarget,setReportTarget]=useState(null);
+  const [reportReason,setReportReason]=useState("SUSPICIOUS_OR_SCAM");
+  const [reportDetails,setReportDetails]=useState("");
+  const [reportSubmitting,setReportSubmitting]=useState(false);
 
   useEffect(()=>{
     let cancelled=false;
@@ -158,17 +162,26 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
   const choose=x=>setSelected(x);
   const favoriteKey=item=>item.kind+":"+item.id;
   const isFavorite=item=>favorites.includes(favoriteKey(item));
-  async function reportListing(item){
+  function reportListing(item){
     if(!user?.id){alert("Please sign in to report a listing.");return;}
     if(!item?.id || item.seller_id===user.id){alert("This listing cannot be reported from this account.");return;}
-    const reason=window.prompt("Why are you reporting this listing?\nEnter: SUSPICIOUS_OR_SCAM, INCORRECT_INFORMATION, PROHIBITED_OR_INVALID_TICKET, DUPLICATE_LISTING, INAPPROPRIATE_CONTENT, or OTHER","SUSPICIOUS_OR_SCAM");
-    if(!reason)return;
-    const allowed=["SUSPICIOUS_OR_SCAM","INCORRECT_INFORMATION","PROHIBITED_OR_INVALID_TICKET","DUPLICATE_LISTING","INAPPROPRIATE_CONTENT","OTHER"];
-    const normalized=reason.trim().toUpperCase().replace(/\s+/g,"_");
-    if(!allowed.includes(normalized)){alert("Please enter one of the listed report reasons exactly.");return;}
-    const details=window.prompt("Optional: add details for the moderation team (leave blank if none).","");
-    const {error}=await supabase.from("listing_reports").insert({listing_id:item.id,listing_kind:item.kind,reporter_id:user.id,reason:normalized,details:details?.trim()||null});
+    setReportTarget(item);
+    setReportReason("SUSPICIOUS_OR_SCAM");
+    setReportDetails("");
+  }
+  async function submitListingReport(){
+    if(!user?.id || !reportTarget || reportSubmitting) return;
+    if(reportReason==="OTHER"&&!reportDetails.trim()){alert("Please explain the reason when selecting Other.");return;}
+    const {error}=await supabase.from("listing_reports").insert({
+      listing_id:reportTarget.id,
+      listing_kind:reportTarget.kind,
+      reporter_id:user.id,
+      reason:reportReason,
+      details:reportDetails.trim()||null
+    });
     if(error){alert(error.message||"Could not submit report.");return;}
+    setReportTarget(null);
+    setReportDetails("");
     alert("Report submitted. Thank you for helping keep ConnectHub safe.");
   }
   async function toggleFavorite(item){
@@ -269,6 +282,34 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
           </div>
         </aside>}
       </div>
+      {reportTarget && <div className="community-modal-backdrop marketplace-report-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!reportSubmitting)setReportTarget(null);}}>
+        <section className="community-leave-modal community-report-modal marketplace-report-modal" role="dialog" aria-modal="true" aria-labelledby="listing-report-title">
+          <button type="button" className="community-modal-close" aria-label="Close report dialog" disabled={reportSubmitting} onClick={()=>setReportTarget(null)}><X size={17}/></button>
+          <div className="community-modal-icon community-report-modal-icon"><Flag size={23}/></div>
+          <span className="community-report-eyebrow">MARKETPLACE SAFETY</span>
+          <h2 id="listing-report-title">Report this listing</h2>
+          <p>Help us understand the problem with “{reportTarget.title}”. Your report will be sent to the moderation team.</p>
+          <div className="community-report-reasons" role="radiogroup" aria-label="Listing report reason">
+            {[
+              ["SUSPICIOUS_OR_SCAM","Suspicious or scam","Potential fraud or misleading offer"],
+              ["INCORRECT_INFORMATION","Incorrect information","Details do not match the listing"],
+              ["PROHIBITED_OR_INVALID_TICKET","Invalid ticket","Ticket may be invalid or not allowed"],
+              ["DUPLICATE_LISTING","Duplicate listing","The same ticket is listed more than once"],
+              ["INAPPROPRIATE_CONTENT","Inappropriate content","Content that should not be listed"],
+              ["OTHER","Other","Another concern not listed above"]
+            ].map(([value,label,description])=><button type="button" key={value} role="radio" aria-checked={reportReason===value} className={"community-report-reason"+(reportReason===value?" selected":"")} onClick={()=>setReportReason(value)}>
+              <span className="community-report-radio">{reportReason===value&&<span/>}</span><span className="community-report-reason-copy"><b>{label}</b><small>{description}</small></span>
+            </button>)}
+          </div>
+          <label className="community-report-details-label" htmlFor="listing-report-details">{reportReason==="OTHER"?"Please explain your concern":"Additional details (optional)"}</label>
+          <textarea id="listing-report-details" value={reportDetails} onChange={e=>setReportDetails(e.target.value.slice(0,1000))} maxLength={1000} rows={3} placeholder={reportReason==="OTHER"?"Explain why this listing should be reviewed…":"Add context for the moderation team…"}/>
+          <div className="community-report-details-meta"><span>{reportReason==="OTHER"&&!reportDetails.trim()?"An explanation is required for Other":"Only include details relevant to this report."}</span><span>{reportDetails.length}/1000</span></div>
+          <div className="community-modal-actions community-report-modal-actions">
+            <button type="button" disabled={reportSubmitting} onClick={()=>setReportTarget(null)}>Cancel</button>
+            <button type="button" className="primary" disabled={reportSubmitting||(reportReason==="OTHER"&&!reportDetails.trim())} onClick={async()=>{setReportSubmitting(true);await submitListingReport();setReportSubmitting(false);}}>{reportSubmitting?"Submitting…":<><Flag size={15}/> Submit report</>}</button>
+          </div>
+        </section>
+      </div>}
     </main>
   );
 }

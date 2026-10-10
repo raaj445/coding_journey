@@ -968,3 +968,15 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
  .community-report-modal-actions{display:grid;grid-template-columns:1fr 1fr}
  .community-report-modal-actions button{min-width:0}
 }
+
+
+/* V2.3 Phase 4 — marketplace listing report modal */
+.marketplace-report-backdrop{z-index:2100;overflow-y:auto;align-items:center}
+.marketplace-report-modal{width:min(560px,100%);max-height:min(90vh,820px);overflow-y:auto;box-sizing:border-box;text-align:left;padding:26px}
+.marketplace-report-modal .community-modal-icon{margin:0 auto 10px}
+.marketplace-report-modal h2{text-align:center;font-size:21px}
+.marketplace-report-modal>p{text-align:center;max-width:430px;line-height:1.6;font-size:11px;margin:8px auto 18px}
+@media(max-width:520px){
+ .marketplace-report-backdrop{padding:10px;align-items:start}
+ .marketplace-report-modal{max-height:calc(100vh - 20px);padding:22px 16px}
+}

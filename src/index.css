@@ -903,3 +903,8 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 
 .notification-request-status,.community-notification-request-status{display:inline-flex;align-items:center;border-radius:7px;padding:7px 10px;background:#f4f2f8;color:#777487;font:800 10px "Manrope",sans-serif}
 .community-notification-request-status{font-size:9px}
+
+/* V2.3 Phase 1 — community ownership transfer */
+.community-member-menu button.community-transfer-owner-action{border-top:1px solid #eeeaf5;margin-top:4px;padding-top:11px;color:#5930d7;font-weight:800}
+.community-member-menu button.community-transfer-owner-action:hover{background:#f1edff;color:#4520b8}
+.community-member-menu button.community-transfer-owner-action:disabled{opacity:.55;cursor:wait}

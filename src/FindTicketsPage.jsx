@@ -282,7 +282,7 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
           </div>
         </aside>}
       </div>
-      {reportTarget && <div className="community-modal-backdrop marketplace-report-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!reportSubmitting)setReportTarget(null);}}>
+      {reportTarget && <div className="community-modal-backdrop community-report-backdrop marketplace-report-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!reportSubmitting)setReportTarget(null);}}>
         <section className="community-leave-modal community-report-modal marketplace-report-modal" role="dialog" aria-modal="true" aria-labelledby="listing-report-title">
           <button type="button" className="community-modal-close" aria-label="Close report dialog" disabled={reportSubmitting} onClick={()=>setReportTarget(null)}><X size={17}/></button>
           <div className="community-modal-icon community-report-modal-icon"><Flag size={23}/></div>

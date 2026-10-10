@@ -666,6 +666,10 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [communityReports, setCommunityReports] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [moderatingReportId, setModeratingReportId] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportReason, setReportReason] = useState("SPAM");
+  const [reportDetails, setReportDetails] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
   const [communityCards, setCommunityCards] = useState([
@@ -1080,20 +1084,48 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     if (!error) { setJoined(v=>({...v,[community.name]:true})); setJoinedCommunityIds(v=>v.includes(community.id)?v:[...v,community.id]); setCommunityCards(v=>v.map(c=>c.id===community.id?{...c,members:String((Number(c.members)||0)+1)}:c)); } else showNotice(error.message);
   }
 
-  async function reportCommunityContent(post, contentType, comment = null) {
+  function reportCommunityContent(post, contentType, comment = null) {
     if (!user?.id || !selectedCommunity?.id || !supabase) { showNotice("Please sign in to report content."); return; }
     const authorId = contentType === "POST" ? post.authorId : comment?.author_id;
     if (authorId === user.id) { showNotice("You cannot report your own content."); return; }
-    const reason = window.prompt("Why are you reporting this " + contentType.toLowerCase() + "?\nEnter one: HARASSMENT, SPAM, SCAM_OR_FRAUD, HATE_OR_ABUSE, INAPPROPRIATE_CONTENT, MISINFORMATION, OTHER", "OTHER");
-    if (reason === null) return;
-    const normalized = reason.trim().toUpperCase().replace(/[\\s-]+/g, "_");
-    const allowed = ["HARASSMENT","SPAM","SCAM_OR_FRAUD","HATE_OR_ABUSE","INAPPROPRIATE_CONTENT","MISINFORMATION","OTHER"];
-    if (!allowed.includes(normalized)) { showNotice("Choose one of the listed report reasons."); return; }
-    const details = window.prompt("Add details (optional, max 1,000 characters):", "") || "";
-    if (details.length > 1000) { showNotice("Details must be 1,000 characters or fewer."); return; }
-    const payload = { community_id: selectedCommunity.id, content_type: contentType, post_id: post.id, comment_id: contentType === "COMMENT" ? comment.id : null, reporter_id: user.id, reason: normalized, details: details.trim() || null };
+    setReportTarget({ post, contentType, comment });
+    setReportReason("SPAM");
+    setReportDetails("");
+  }
+
+  async function submitCommunityReport() {
+    if (!reportTarget || !user?.id || !selectedCommunity?.id || !supabase || submittingReport) return;
+    if (reportReason === "OTHER" && !reportDetails.trim()) {
+      showNotice("Please explain the reason when selecting Other.");
+      return;
+    }
+    if (reportDetails.length > 1000) {
+      showNotice("Details must be 1,000 characters or fewer.");
+      return;
+    }
+    const { post, contentType, comment } = reportTarget;
+    const dbReason = ({
+      SEXUAL_CONTENT: "INAPPROPRIATE_CONTENT",
+      VIOLENCE_OR_HARMFUL_CONTENT: "INAPPROPRIATE_CONTENT",
+      HARASSMENT_OR_BULLYING: "HARASSMENT",
+      HATE_SPEECH: "HATE_OR_ABUSE"
+    })[reportReason] || reportReason;
+    const payload = {
+      community_id: selectedCommunity.id,
+      content_type: contentType,
+      post_id: post.id,
+      comment_id: contentType === "COMMENT" ? comment.id : null,
+      reporter_id: user.id,
+      reason: dbReason,
+      details: reportDetails.trim() || null
+    };
+    setSubmittingReport(true);
     const { error } = await supabase.from("community_content_reports").insert(payload);
+    setSubmittingReport(false);
     if (error) { showNotice(error.message || "Could not submit report."); return; }
+    setReportTarget(null);
+    setReportReason("SPAM");
+    setReportDetails("");
     showNotice("Report submitted to community moderators.");
   }
 
@@ -1274,6 +1306,41 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       </section>
     </div>
   ) : null;
+  const reportModal = reportTarget ? (
+    <div className="community-modal-backdrop community-report-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!submittingReport)setReportTarget(null);}}>
+      <section className="community-leave-modal community-report-modal" role="dialog" aria-modal="true" aria-labelledby="community-report-title" aria-describedby="community-report-description">
+        <button type="button" className="community-modal-close" aria-label="Close report dialog" disabled={submittingReport} onClick={()=>setReportTarget(null)}><X size={17}/></button>
+        <div className="community-modal-icon community-report-modal-icon"><ShieldCheck size={24}/></div>
+        <span className="community-report-eyebrow">COMMUNITY SAFETY</span>
+        <h2 id="community-report-title">Report this {reportTarget.contentType.toLowerCase()}</h2>
+        <p id="community-report-description">Help us understand what is wrong. Your report will be sent to this community’s moderators.</p>
+        <div className="community-report-reasons" role="radiogroup" aria-label="Report reason">
+          {[
+            ["SPAM","Spam or unwanted promotion","Repeated or irrelevant content"],
+            ["SEXUAL_CONTENT","Sexual content","Nudity or sexually explicit material"],
+            ["HARASSMENT_OR_BULLYING","Harassment or bullying","Targeted abuse or intimidation"],
+            ["HATE_SPEECH","Hate speech","Attacks or hateful language"],
+            ["SCAM_OR_FRAUD","Scam or fraud","Suspicious offers or deception"],
+            ["VIOLENCE_OR_HARMFUL_CONTENT","Violence or harmful content","Threats or disturbing material"],
+            ["MISINFORMATION","False information","Misleading or inaccurate claims"],
+            ["OTHER","Other","Something else that concerns you"]
+          ].map(([value,label,description])=>(
+            <button type="button" key={value} role="radio" aria-checked={reportReason===value} className={"community-report-reason"+(reportReason===value?" selected":"")} onClick={()=>setReportReason(value)}>
+              <span className="community-report-radio">{reportReason===value&&<span/>}</span>
+              <span className="community-report-reason-copy"><b>{label}</b><small>{description}</small></span>
+            </button>
+          ))}
+        </div>
+        <label className="community-report-details-label" htmlFor="community-report-details">{reportReason==="OTHER"?"Please explain your concern":"Additional details (optional)"}</label>
+        <textarea id="community-report-details" value={reportDetails} onChange={e=>setReportDetails(e.target.value.slice(0,1000))} placeholder={reportReason==="OTHER"?"Tell us why this content should be reviewed…":"Add context to help moderators review this report…"} maxLength={1000} rows={3}/>
+        <div className="community-report-details-meta"><span>{reportReason==="OTHER"&&!reportDetails.trim()?"An explanation is required for Other":"Only share details relevant to this report."}</span><span>{reportDetails.length}/1000</span></div>
+        <div className="community-modal-actions community-report-modal-actions">
+          <button type="button" disabled={submittingReport} onClick={()=>setReportTarget(null)}>Cancel</button>
+          <button type="button" className="primary" disabled={submittingReport||(reportReason==="OTHER"&&!reportDetails.trim())} onClick={submitCommunityReport}>{submittingReport?"Submitting…":<><ShieldCheck size={15}/> Submit report</>}</button>
+        </div>
+      </section>
+    </div>
+  ) : null;
   const inviteModal = inviteModalOpen && selectedCommunity ? (
     <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setInviteModalOpen(false);}}>
       <div className="community-leave-modal community-invite-modal" role="dialog" aria-modal="true" aria-labelledby="community-invite-title">
@@ -1376,7 +1443,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       {activeCommunityTab==="Tickets" && <section className="community-empty-tab"><div className="community-empty-icon">🎟️</div><h2>No community tickets yet</h2><p>Ticket posts connected to this community will appear here in a later release.</p></section>}
       {activeCommunityTab==="Reports" && canManageMembers && <section className="community-detail-panel"><div className="community-detail-card"><div className="community-detail-head"><div><h2>Content reports</h2><p>Review reports submitted by community members.</p></div><span>{communityReports.filter(r=>r.status==="OPEN").length} open</span></div>{reportsLoading ? <div className="community-empty-inline">Loading reports…</div> : !communityReports.length ? <div className="community-empty-inline">No reports submitted for this community.</div> : <div className="community-moderation-list">{communityReports.map(report=><article className="community-moderation-report" key={report.id}><div className="community-moderation-report-head"><b>{report.content_type} report</b><span className={"community-report-status "+report.status.toLowerCase()}>{report.status.replace("_"," ")}</span></div><p><b>Reason:</b> {report.reason.replaceAll("_"," ").toLowerCase()}</p>{report.details&&<p>{report.details}</p>}<small>Submitted {new Date(report.created_at).toLocaleString()}</small>{report.resolution_note&&<p className="community-report-resolution"><b>Moderator note:</b> {report.resolution_note}</p>}{report.status==="OPEN"&&<div className="community-moderation-actions"><button type="button" disabled={moderatingReportId===report.id} onClick={()=>moderateCommunityReport(report,"REVIEWED")}>Mark reviewed</button><button type="button" disabled={moderatingReportId===report.id} onClick={()=>moderateCommunityReport(report,"DISMISSED")}>Dismiss</button><button type="button" className="danger" disabled={moderatingReportId===report.id} onClick={()=>moderateCommunityReport(report,"ACTION_TAKEN")}>{moderatingReportId===report.id?"Processing…":"Remove content"}</button></div>}</article>)}</div>}</div></section>}
       </>}
-    </section><aside className={isPrivateLocked ? "community-right community-right-locked" : "community-right"}><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card community-rules-card"><div className="community-side-title-row"><h2>Community Rules</h2>{isOwnerCurrent && !editingRules && <button type="button" onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(true);}}>Edit rules</button>}</div>{editingRules && isOwnerCurrent ? <div className="community-rules-editor"><p>Write one rule per line. Maximum 3,000 characters.</p><textarea value={rulesDraft} onChange={e=>setRulesDraft(e.target.value)} maxLength={3000} rows={7} placeholder={"Be respectful to all members\nNo spam or scams\nKeep posts relevant to this community"} /><small>{rulesDraft.length}/3000 characters</small><div className="community-rules-actions"><button type="button" disabled={savingRules} onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(false);}}>Cancel</button><button type="button" className="primary" disabled={savingRules} onClick={saveCommunityRules}>{savingRules?"Saving...":"Save rules"}</button></div></div> : (community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).length ? <ol className="community-rules">{(community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).map((rule,index)=><li key={index}>{rule}</li>)}</ol> : <p className="community-rules-empty">No custom rules have been added yet.{isOwnerCurrent?" Add rules to help members understand your community guidelines.":""}</p>}</section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}      {inviteModal}{leaveModal}{requesterProfileModal}
+    </section><aside className={isPrivateLocked ? "community-right community-right-locked" : "community-right"}><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card community-rules-card"><div className="community-side-title-row"><h2>Community Rules</h2>{isOwnerCurrent && !editingRules && <button type="button" onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(true);}}>Edit rules</button>}</div>{editingRules && isOwnerCurrent ? <div className="community-rules-editor"><p>Write one rule per line. Maximum 3,000 characters.</p><textarea value={rulesDraft} onChange={e=>setRulesDraft(e.target.value)} maxLength={3000} rows={7} placeholder={"Be respectful to all members\nNo spam or scams\nKeep posts relevant to this community"} /><small>{rulesDraft.length}/3000 characters</small><div className="community-rules-actions"><button type="button" disabled={savingRules} onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(false);}}>Cancel</button><button type="button" className="primary" disabled={savingRules} onClick={saveCommunityRules}>{savingRules?"Saving...":"Save rules"}</button></div></div> : (community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).length ? <ol className="community-rules">{(community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).map((rule,index)=><li key={index}>{rule}</li>)}</ol> : <p className="community-rules-empty">No custom rules have been added yet.{isOwnerCurrent?" Add rules to help members understand your community guidelines.":""}</p>}</section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}      {inviteModal}{leaveModal}{requesterProfileModal}{reportModal}
     </main>);}
   return (
     <main className="communities-discover-shell">

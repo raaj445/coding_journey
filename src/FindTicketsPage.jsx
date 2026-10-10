@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bell, CalendarDays, ChevronDown, Clock3, Heart, Home, MapPin, MessageCircle, Music2, Search, SlidersHorizontal, Ticket, UserRound, Users, X, Tag } from "lucide-react";
+import { ArrowLeft, Bell, CalendarDays, ChevronDown, Clock3, Flag, Heart, Home, MapPin, MessageCircle, Music2, Search, SlidersHorizontal, Ticket, UserRound, Users, X, Tag } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import TrainArtwork from "./TrainArtwork";
 import UniversalSidebar from "./UniversalSidebar";
@@ -158,6 +158,19 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
   const choose=x=>setSelected(x);
   const favoriteKey=item=>item.kind+":"+item.id;
   const isFavorite=item=>favorites.includes(favoriteKey(item));
+  async function reportListing(item){
+    if(!user?.id){alert("Please sign in to report a listing.");return;}
+    if(!item?.id || item.seller_id===user.id){alert("This listing cannot be reported from this account.");return;}
+    const reason=window.prompt("Why are you reporting this listing?\nEnter: SUSPICIOUS_OR_SCAM, INCORRECT_INFORMATION, PROHIBITED_OR_INVALID_TICKET, DUPLICATE_LISTING, INAPPROPRIATE_CONTENT, or OTHER","SUSPICIOUS_OR_SCAM");
+    if(!reason)return;
+    const allowed=["SUSPICIOUS_OR_SCAM","INCORRECT_INFORMATION","PROHIBITED_OR_INVALID_TICKET","DUPLICATE_LISTING","INAPPROPRIATE_CONTENT","OTHER"];
+    const normalized=reason.trim().toUpperCase().replace(/\s+/g,"_");
+    if(!allowed.includes(normalized)){alert("Please enter one of the listed report reasons exactly.");return;}
+    const details=window.prompt("Optional: add details for the moderation team (leave blank if none).","");
+    const {error}=await supabase.from("listing_reports").insert({listing_id:item.id,listing_kind:item.kind,reporter_id:user.id,reason:normalized,details:details?.trim()||null});
+    if(error){alert(error.message||"Could not submit report.");return;}
+    alert("Report submitted. Thank you for helping keep ConnectHub safe.");
+  }
   async function toggleFavorite(item){
     if(!user?.id || favoriteBusy) return;
     const key=favoriteKey(item);
@@ -252,6 +265,7 @@ export default function FindTicketsPage({ user, onBack, onNavigate, onLogout }) 
             </div>
             {selected.description&&<><h4>About this listing</h4><p className="detail-description">{selected.description}</p></>}
             <div className="detail-actions"><button><MessageCircle size={17}/> Message Seller</button><button className="offer-button" disabled={!selected.ready_to_bargain}><Tag size={17}/> Make Offer</button></div>
+            <button className="detail-report-button" onClick={()=>reportListing(selected)}><Flag size={15}/> Report listing</button>
           </div>
         </aside>}
       </div>

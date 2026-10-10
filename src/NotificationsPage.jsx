@@ -11,8 +11,19 @@ export default function NotificationsPage({ user, onBack, onNavigate, onLogout }
   const [busyRequest,setBusyRequest]=useState("");
   async function load(){
     if(!user?.id){setLoading(false);return;}
-    const {data}=await supabase.from("community_notifications").select("*").eq("user_id",user.id).order("created_at",{ascending:false}).limit(50);
-    setItems(data||[]);setLoading(false);
+    const {data,error}=await supabase.from("community_notifications").select("*").eq("user_id",user.id).order("created_at",{ascending:false}).limit(100);
+    if(error){setNotice(error.message||"Could not load notifications.");setItems([]);setLoading(false);return;}
+    let rows=data||[];
+    const requestIds=[...new Set(rows.filter(n=>n.type==="JOIN_REQUEST"&&n.entity_id).map(n=>n.entity_id))];
+    const statuses={};
+    if(requestIds.length){
+      const {data:requests,error:requestError}=await supabase.from("community_join_requests").select("id,status").in("id",requestIds);
+      if(!requestError)(requests||[]).forEach(r=>{statuses[r.id]=r.status;});
+    }
+    rows=rows.map(n=>n.type==="JOIN_REQUEST"?{...n,request_status:statuses[n.entity_id]||"UNKNOWN"}:n);
+    const seen=new Set();
+    rows=rows.filter(n=>{if(n.type!=="JOIN_REQUEST"||!n.entity_id)return true;if(seen.has(n.entity_id))return false;seen.add(n.entity_id);return true;});
+    setItems(rows.slice(0,50));setLoading(false);
   }
   useEffect(()=>{
     load();
@@ -29,13 +40,17 @@ export default function NotificationsPage({ user, onBack, onNavigate, onLogout }
     setItems(v=>v.map(x=>({...x,read_at:x.read_at||now})));
   }
   async function reviewRequest(n,status){
-    if(!n?.entity_id)return;
-    setBusyRequest(n.entity_id);
-    const {error}=await supabase.rpc("process_community_join_request",{p_request_id:n.entity_id,p_status:status});
-    setBusyRequest("");
-    if(error){setNotice(error.message||"Could not process this request.");return;}
-    setItems(v=>v.filter(item=>item.entity_id!==n.entity_id || item.type!=="JOIN_REQUEST"));
-    setNotice(status==="ACCEPTED"?"Request accepted. The requester is now a community member.":"Request rejected.");
+    if(!n?.entity_id||busyRequest)return;
+    if(n.request_status!=="PENDING"){setNotice("This request has already been processed. Refreshing its status.");await load();return;}
+    setBusyRequest(n.entity_id);setNotice("");
+    try{
+      const {error}=await supabase.rpc("process_community_join_request",{p_request_id:n.entity_id,p_status:status});
+      if(error){setNotice(error.message||"Could not process this request.");await load();return;}
+      setItems(v=>v.filter(item=>item.entity_id!==n.entity_id||item.type!=="JOIN_REQUEST"));
+      setNotice(status==="ACCEPTED"?"Request accepted. The requester is now a community member.":"Request rejected.");
+      await load();
+    }catch(e){setNotice(e?.message||"Request failed. Please try again.");}
+    finally{setBusyRequest("");}
   }
   async function viewProfile(userId){
     if(!userId)return;
@@ -49,7 +64,7 @@ export default function NotificationsPage({ user, onBack, onNavigate, onLogout }
       <button className="profile-back" onClick={onBack}><ArrowLeft size={16}/> Back</button>
       <div className="notifications-heading"><div><span>CONNECTHUB</span><h1>Notifications</h1><p>Community activity and account updates in one place.</p></div><button onClick={markAll}><Check size={14}/> Mark all read</button></div>
       {notice&&<div className="notifications-feedback" role="status">{notice}<button onClick={()=>setNotice("")} aria-label="Dismiss"><X size={14}/></button></div>}
-      <section className="notifications-card">{loading?<div className="notifications-empty">Loading notifications...</div>:!items.length?<div className="notifications-empty"><Bell size={28}/><b>You're all caught up</b><span>No notifications yet.</span></div>:items.map(n=><article className={n.read_at?"notification-row":"notification-row unread"} key={n.id}><div className="notification-icon"><Bell size={16}/></div><div className="notification-row-content"><b>{n.title}</b><p>{n.body}</p><small><Clock3 size={11}/> {new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</small>{n.type==="JOIN_REQUEST"&&<div className="notification-join-actions"><button onClick={()=>viewProfile(n.actor_id)}>View Profile</button><button disabled={busyRequest===n.entity_id} onClick={()=>reviewRequest(n,"ACCEPTED")}>{busyRequest===n.entity_id?"Working...":"Accept"}</button><button disabled={busyRequest===n.entity_id} onClick={()=>reviewRequest(n,"REJECTED")}>Reject</button></div>}</div></article>)}</section>
+      <section className="notifications-card">{loading?<div className="notifications-empty">Loading notifications...</div>:!items.length?<div className="notifications-empty"><Bell size={28}/><b>You're all caught up</b><span>No notifications yet.</span></div>:items.map(n=><article className={n.read_at?"notification-row":"notification-row unread"} key={n.id}><div className="notification-icon"><Bell size={16}/></div><div className="notification-row-content"><b>{n.title}</b><p>{n.body}</p><small><Clock3 size={11}/> {new Date(n.created_at).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})}</small>{n.type==="JOIN_REQUEST"&&<div className="notification-join-actions">{n.request_status==="PENDING"?<><button onClick={()=>viewProfile(n.actor_id)}>View Profile</button><button disabled={!!busyRequest} onClick={()=>reviewRequest(n,"ACCEPTED")}>{busyRequest===n.entity_id?"Working...":"Accept"}</button><button disabled={!!busyRequest} onClick={()=>reviewRequest(n,"REJECTED")}>Reject</button></>:<span className="notification-request-status">{n.request_status==="APPROVED"?"Accepted":n.request_status==="REJECTED"?"Request rejected":"Status unavailable"}</span>}</div>}</div></article>)}</section>
       {profile&&<div className="notification-profile-overlay" role="dialog" aria-modal="true"><section className="notification-profile-card"><button className="notification-profile-close" onClick={()=>setProfile(null)} aria-label="Close profile"><X size={18}/></button><div className="notification-profile-avatar">{profile.avatar_url?<img src={profile.avatar_url} alt=""/>:<UserRound size={25}/>}</div><h2>{profile.full_name||profile.username||"Community member"}</h2>{profile.username&&<p>@{profile.username}</p>}{profile.bio&&<p>{profile.bio}</p>}{(profile.city||profile.state)&&<p>{[profile.city,profile.state].filter(Boolean).join(", ")}</p>}<button className="notification-profile-done" onClick={()=>setProfile(null)}>Close</button></section></div>}
     </section>
   </main>;

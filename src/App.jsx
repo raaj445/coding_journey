@@ -660,6 +660,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [savingRules, setSavingRules] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
+  const [requestProfile, setRequestProfile] = useState(null);
+  const [requestProfileLoading, setRequestProfileLoading] = useState(false);
 
   const categories = ["All","Students","Travel","Housing","Career","Events","Cities","Other"];
   const [communityCards, setCommunityCards] = useState([
@@ -694,7 +696,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
         setCommunityCards(cards);
         const sharedCommunityId = new URLSearchParams(window.location.search).get("community");
         if (sharedCommunityId) {
-          const sharedCommunity = cards.find(item => item.id === sharedCommunityId);
+          const sharedCommunity = cards.find(item => String(item.id) === String(sharedCommunityId));
           if (sharedCommunity) setSelectedCommunity(sharedCommunity);
         }
       }
@@ -799,7 +801,9 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     ? (b.likes - a.likes) || (b.comments - a.comments) || (new Date(b.rawCreatedAt) - new Date(a.rawCreatedAt))
     : new Date(b.rawCreatedAt) - new Date(a.rawCreatedAt));
 
+  const sharedCommunityId = new URLSearchParams(window.location.search).get("community");
   const filtered = communityCards.filter(item =>
+    (item.privacy !== "Private" || item.ownerId === user?.id || joinedCommunityIds.includes(item.id) || item.id === sharedCommunityId) &&
     (category === "All" || item.category === category) &&
     (!search.trim() || (item.name+" "+item.desc+" "+item.category).toLowerCase().includes(search.toLowerCase()))
   );
@@ -1059,6 +1063,16 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     setNotifications(v=>v.map(n=>({...n,read_at:n.read_at||new Date().toISOString()})));
   }
 
+  async function openRequesterProfile(userId) {
+    if (!supabase || !userId) return;
+    setRequestProfileLoading(true);
+    setRequestProfile(null);
+    const { data, error } = await supabase.from("profiles").select("id,full_name,username,bio,state,city,avatar_url").eq("id",userId).maybeSingle();
+    setRequestProfileLoading(false);
+    if (error) { showNotice("Could not load this profile."); return; }
+    setRequestProfile(data || { id:userId, full_name:"Community member" });
+  }
+
   async function handleJoinRequest(requestId,status){
     if(!supabase || !selectedCommunity?.id) return;
     const request=joinRequests.find(r=>r.id===requestId);
@@ -1140,6 +1154,19 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     }
     showNotice(was?"Removed from bookmarks.":"Saved to bookmarks.");
   }
+  const requesterProfileModal = requestProfile ? (
+    <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setRequestProfile(null);}}>
+      <section className="community-leave-modal community-request-profile-modal" role="dialog" aria-modal="true" aria-labelledby="requester-profile-title">
+        <button type="button" className="community-modal-close" onClick={()=>setRequestProfile(null)} aria-label="Close profile"><X size={17}/></button>
+        <div className="community-modal-icon">{requestProfile.avatar_url ? <img src={requestProfile.avatar_url} alt="" /> : <UserRound size={24}/>}</div>
+        <h2 id="requester-profile-title">{requestProfileLoading ? "Loading profile…" : (requestProfile.full_name || requestProfile.username || "Community member")}</h2>
+        {requestProfile.username && <p>@{requestProfile.username}</p>}
+        {requestProfile.bio && <p>{requestProfile.bio}</p>}
+        {(requestProfile.city || requestProfile.state) && <p>{[requestProfile.city,requestProfile.state].filter(Boolean).join(", ")}</p>}
+        <div className="community-modal-actions"><button className="primary" onClick={()=>setRequestProfile(null)}>Close</button></div>
+      </section>
+    </div>
+  ) : null;
   const inviteModal = inviteModalOpen && selectedCommunity ? (
     <div className="community-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setInviteModalOpen(false);}}>
       <div className="community-leave-modal community-invite-modal" role="dialog" aria-modal="true" aria-labelledby="community-invite-title">
@@ -1205,6 +1232,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     const isOwnerCurrent=community.ownerId===user?.id || myCommunityIds.includes(community.id) || currentMember?.role==="OWNER";
     const isAdminCurrent=currentMember?.role==="ADMIN";
     const canManageMembers=isOwnerCurrent || isAdminCurrent;
+    const isPrivateLocked=community.privacy==="Private" && !isOwnerCurrent && !joinedCommunityIds.includes(community.id);
     const unreadNotifications=notifications.filter(n=>!n.read_at).length;
     const filteredVisiblePosts=visiblePosts.filter(p=>(postSort!=="saved" || bookmarkedPosts[p.id]) && (!postSearch.trim() || (p.text+" "+p.name+" "+p.role).toLowerCase().includes(postSearch.toLowerCase())));
     return (<main className="community-shell">
@@ -1212,6 +1240,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     <div className="community-layout"><UniversalSidebar activeNav="Communities" onNavigate={onNavigate} onLogout={onLogout}/><section className="community-main">
       <button className="community-back-dashboard" onClick={()=>setSelectedCommunity(null)}><ArrowRight size={17} style={{transform:"rotate(180deg)"}}/> Back to Community Dashboard</button>
       <div className="community-cover"><div className="community-cover-art" style={{backgroundImage:"url("+community.image+")",backgroundSize:"cover",backgroundPosition:"center"}}></div><div className="community-header-card"><div className="community-logo">{community.icon?.startsWith("http")?<img src={community.icon} alt=""/>:community.icon}</div><div className="community-title-block"><h1>{community.name}</h1><p>{community.members} members <span>•</span> {community.privacy} <span>•</span> {community.category}</p><small>{community.desc}</small></div><div className="community-header-actions">{(() => { const isOwner = isOwnerCurrent; const isMember = isOwner || joined[community.name] || joinedCommunityIds.includes(community.id); const pending = pendingRequestIds.includes(community.id); return <button className={isOwner ? "community-join owner" : isMember ? "community-join joined" : pending ? "community-join pending" : "community-join"} onClick={()=>isOwner ? showNotice("This is your community.") : isMember ? startLeaveCommunity(community) : pending ? showNotice("Join request is pending.") : joinCommunity(community)}>{isOwner ? "★  My Community" : isMember ? "✓ Joined" : pending ? "⏳ Request Sent" : (community.privacy === "Private" ? "Request to Join" : "Join Community")}</button>; })()}<button className="community-share-button" onClick={()=>shareCommunity(community)} title="Share community link"><Share2 size={16}/> Share</button></div></div><nav className="community-tabs">{["Posts","About","Members","Events","Tickets"].map(tab=><button key={tab} className={activeCommunityTab===tab?"active":""} onClick={()=>setActiveCommunityTab(tab)}>{tab}</button>)}</nav></div>
+      {isPrivateLocked ? <section className="community-private-lock"><div className="community-private-lock-icon"><LockKeyhole size={28}/></div><h2>This is a private community</h2><p>Posts, members, and community activity are hidden until the owner or an admin approves your request.</p><div className="community-private-lock-status">{pendingRequestIds.includes(community.id) ? "Your request is pending review." : "Request access to see the full community."}</div><button className="community-private-request" onClick={()=>joinCommunity(community)} disabled={pendingRequestIds.includes(community.id)}>{pendingRequestIds.includes(community.id) ? "Request Sent" : "Request to Join"}</button></section> : <>
       {activeCommunityTab==="Posts" && <>
       <section className="community-composer"><div className="community-composer-avatar">{avatar?<img src={avatar} alt=""/>:<UserRound size={18}/>}</div><div className="community-composer-body"><textarea value={postText} onChange={e=>setPostText(e.target.value)} placeholder={"Write something to the community, "+currentName.split(" ")[0]+"..."} rows={2}/><div className="community-composer-actions"><div><button onClick={()=>showNotice("Image posting will be connected in V2.2.")}>＋ Image</button><button onClick={()=>showNotice("Polls will be connected in V2.2.")}>▥ Poll</button><button onClick={()=>showNotice("Tagging will be connected in V2.2.")}>⌑ Tag</button></div><button className="community-post-button" onClick={addPost}>Post</button></div></div></section>
       <div className="community-feed-filter"><button className={postSort==="latest"?"active":""} onClick={()=>setPostSort("latest")}>Latest</button><button className={postSort==="popular"?"active":""} onClick={()=>setPostSort("popular")}>Popular</button><button className={postSort==="saved"?"active":""} onClick={()=>setPostSort("saved")}>Saved</button><span className="community-feed-count">{filteredVisiblePosts.length} posts</span></div>
@@ -1228,7 +1257,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
           ["MEMBER","Members",communityMembers.filter(m=>m.role==="MEMBER").length]
         ].map(([value,label,count])=><button key={value} className={memberRoleFilter===value?"active":""} onClick={()=>setMemberRoleFilter(value)}>{label}<span>{count}</span></button>)}
       </div>
-      {canManageMembers && isOwnerCurrent && joinRequests.length>0 && <div className="community-requests-box"><div className="community-requests-head"><div><h3>Join Requests</h3><p>{joinRequests.length} pending request{joinRequests.length>1?"s":""}</p></div></div>{joinRequests.map(r=><div className="community-request-item" key={r.id}><div className="community-member-avatar">{r.requester_avatar_url?<img src={r.requester_avatar_url} alt=""/>:<UserRound size={16}/>}</div><div><b>{r.requester_name||"Community member"}</b><small>Requested {new Date(r.created_at).toLocaleDateString()}</small></div><div className="community-request-actions"><button onClick={()=>handleJoinRequest(r.id,"ACCEPTED")}>Accept</button><button onClick={()=>handleJoinRequest(r.id,"REJECTED")}>Reject</button></div></div>)}</div>}
+      {canManageMembers && joinRequests.length>0 && <div className="community-requests-box"><div className="community-requests-head"><div><h3>Join Requests</h3><p>{joinRequests.length} pending request{joinRequests.length>1?"s":""}</p></div></div>{joinRequests.map(r=><div className="community-request-item" key={r.id}><div className="community-member-avatar">{r.requester_avatar_url?<img src={r.requester_avatar_url} alt=""/>:<UserRound size={16}/>}</div><div><button className="community-request-profile-button" onClick={()=>openRequesterProfile(r.user_id)}>{r.requester_name||"Community member"}</button><small>Requested {new Date(r.created_at).toLocaleDateString()}</small></div><div className="community-request-actions"><button onClick={()=>handleJoinRequest(r.id,"ACCEPTED")}>Accept</button><button onClick={()=>handleJoinRequest(r.id,"REJECTED")}>Reject</button></div></div>)}</div>}
       <div className="community-members-list">{communityMembers.filter(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase())).map(m=><div className="community-member-item" key={m.id}>
         <div className="community-member-avatar">{m.avatar_url?<img src={m.avatar_url} alt=""/>:<UserRound size={16}/>}</div>
         <div><b>{m.username || "Member"}</b><small>{m.role}</small></div>
@@ -1238,7 +1267,8 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
       {!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No members in this category.</div>}
       </div></section>}{activeCommunityTab==="Events" && <section className="community-empty-tab"><div className="community-empty-icon">🎉</div><h2>No events yet</h2><p>Community events will appear here. Event creation is planned for V2.2.</p></section>}
       {activeCommunityTab==="Tickets" && <section className="community-empty-tab"><div className="community-empty-icon">🎟️</div><h2>No community tickets yet</h2><p>Ticket posts connected to this community will appear here in a later release.</p></section>}
-    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card community-rules-card"><div className="community-side-title-row"><h2>Community Rules</h2>{isOwnerCurrent && !editingRules && <button type="button" onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(true);}}>Edit rules</button>}</div>{editingRules && isOwnerCurrent ? <div className="community-rules-editor"><p>Write one rule per line. Maximum 3,000 characters.</p><textarea value={rulesDraft} onChange={e=>setRulesDraft(e.target.value)} maxLength={3000} rows={7} placeholder={"Be respectful to all members\nNo spam or scams\nKeep posts relevant to this community"} /><small>{rulesDraft.length}/3000 characters</small><div className="community-rules-actions"><button type="button" disabled={savingRules} onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(false);}}>Cancel</button><button type="button" className="primary" disabled={savingRules} onClick={saveCommunityRules}>{savingRules?"Saving...":"Save rules"}</button></div></div> : (community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).length ? <ol className="community-rules">{(community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).map((rule,index)=><li key={index}>{rule}</li>)}</ol> : <p className="community-rules-empty">No custom rules have been added yet.{isOwnerCurrent?" Add rules to help members understand your community guidelines.":""}</p>}</section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}      {inviteModal}{leaveModal}
+      </>}
+    </section><aside className="community-right"><section className="community-side-card"><h2>Community Info</h2><div className="community-info-row"><Users size={17}/><span>{communityMembers.length || community.members} members</span></div><div className="community-info-row"><HeartHandshake size={17}/><span>{community.privacy} community</span></div><div className="community-info-row"><Ticket size={17}/><span>{community.category}</span></div>{community.city&&<div className="community-info-row"><MapPin size={17}/><span>{community.city}, {community.state}</span></div>}<p>{community.desc}</p>{!isOwnerCurrent && joinedCommunityIds.includes(community.id) && <button className="community-leave-button" onClick={()=>startLeaveCommunity(community)}>Leave Community</button>}</section><section className="community-side-card community-rules-card"><div className="community-side-title-row"><h2>Community Rules</h2>{isOwnerCurrent && !editingRules && <button type="button" onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(true);}}>Edit rules</button>}</div>{editingRules && isOwnerCurrent ? <div className="community-rules-editor"><p>Write one rule per line. Maximum 3,000 characters.</p><textarea value={rulesDraft} onChange={e=>setRulesDraft(e.target.value)} maxLength={3000} rows={7} placeholder={"Be respectful to all members\nNo spam or scams\nKeep posts relevant to this community"} /><small>{rulesDraft.length}/3000 characters</small><div className="community-rules-actions"><button type="button" disabled={savingRules} onClick={()=>{setRulesDraft(community.rules || "");setEditingRules(false);}}>Cancel</button><button type="button" className="primary" disabled={savingRules} onClick={saveCommunityRules}>{savingRules?"Saving...":"Save rules"}</button></div></div> : (community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).length ? <ol className="community-rules">{(community.rules || "").split("\n").map(rule=>rule.trim()).filter(Boolean).map((rule,index)=><li key={index}>{rule}</li>)}</ol> : <p className="community-rules-empty">No custom rules have been added yet.{isOwnerCurrent?" Add rules to help members understand your community guidelines.":""}</p>}</section><section className="community-side-card"><div className="community-side-title-row"><h2>Upcoming Events</h2><button onClick={()=>showNotice("No upcoming events yet.")}>View all</button></div><div className="community-event"><div className="community-event-art">🎉</div><div><b>No upcoming event</b><small>Events will appear here.</small></div></div></section><section className="community-side-card"><div className="community-side-title-row"><h2>Top Members</h2><button onClick={()=>showNotice("Members will appear here.")}>View all</button></div><div className="community-member-row"><span className="community-member-avatar"><UserRound size={16}/></span><div><b>{currentName}</b><small>New member</small></div><button>Following</button></div></section></aside></div>{notice&&<div className="community-toast">{notice}</div>}      {inviteModal}{leaveModal}{requesterProfileModal}
     </main>);}
   return (
     <main className="communities-discover-shell">

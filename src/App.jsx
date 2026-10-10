@@ -391,7 +391,7 @@ function MyListingsPage({ user, onBack, onNavigate, onLogout }) {
     setSaving(true);
     try {
       const table = editing.kind === "TRAIN" ? "listings" : editing.kind === "MOVIE" ? "movie_listings" : "concert_listings";
-      const { error: updateError } = await supabase
+      const { data: updatedRow, error: updateError } = await supabase
         .from(table)
         .update({
           price_per_ticket: priceValue,
@@ -400,8 +400,11 @@ function MyListingsPage({ user, onBack, onNavigate, onLogout }) {
         })
         .eq("id", editing.id)
         .eq("seller_id", user.id)
-        .eq("status", "ACTIVE");
+        .eq("status", "ACTIVE")
+        .select("id")
+        .maybeSingle();
       if (updateError) throw updateError;
+      if (!updatedRow) throw new Error("This listing is no longer active or you no longer have permission to edit it. Refresh your listings.");
       setItems(current => current.map(item => item.id === editing.id && item.kind === editing.kind
         ? { ...item, price_per_ticket: priceValue, ready_to_bargain: editBargain, description: editDescription.trim() || null }
         : item
@@ -422,13 +425,16 @@ function MyListingsPage({ user, onBack, onNavigate, onLogout }) {
     if (!confirmed) return;
     const table = item.kind === "TRAIN" ? "listings" : item.kind === "MOVIE" ? "movie_listings" : "concert_listings";
     try {
-      const { error: updateError } = await supabase
+      const { data: updatedRow, error: updateError } = await supabase
         .from(table)
         .update({ status: "EXPIRED", expired_at: new Date().toISOString() })
         .eq("id", item.id)
         .eq("seller_id", user.id)
-        .eq("status", "ACTIVE");
+        .eq("status", "ACTIVE")
+        .select("id")
+        .maybeSingle();
       if (updateError) throw updateError;
+      if (!updatedRow) throw new Error("This listing is no longer active or you no longer have permission to expire it. Refresh your listings.");
       setItems(current => current.map(row => row.id === item.id && row.kind === item.kind
         ? { ...row, status: "EXPIRED", expired_at: new Date().toISOString() }
         : row

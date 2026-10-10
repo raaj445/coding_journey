@@ -244,7 +244,7 @@ function CreateListingPage({ onBack, onMovie, onConcert, onNavigate, onLogout, a
         <div className="listing-top-search"><Search size={16}/><input placeholder="Search for roommates, tickets, or anything..." /></div>
         <button className="listing-browse">Browse</button>
         <button className="listing-post-top" onClick={() => window.scrollTo({top:0,behavior:"smooth"})}>Post Listing</button>
-        <button className="listing-bell" aria-label="Notifications"><Bell size={19}/></button>
+        <button className="listing-bell" aria-label="Notifications" onClick={()=>onNavigate?.("Notifications")}><Bell size={19}/></button>
         <span className="listing-user-avatar">A</span>
       </header>
 
@@ -573,7 +573,7 @@ function FavoritesPage({ user, onBack, onNavigate, onLogout }) {
         <button className="marketplace-brand" onClick={onBack}><span><Heart size={18} fill="currentColor"/></span>Connect<span>Hub</span></button>
         <div className="marketplace-search"><Search size={18}/><input placeholder="Search your favorites..." readOnly /></div>
         <button className="marketplace-icon-btn active"><Heart size={20} fill="currentColor"/></button>
-        <button className="marketplace-icon-btn"><Bell size={19}/></button>
+        <button className="marketplace-icon-btn" aria-label="Notifications" onClick={()=>onNavigate?.("Notifications")}><Bell size={19}/></button>
         <span className="marketplace-avatar"><UserRound size={18}/></span>
       </header>
       <div className="favorites-body">
@@ -1300,7 +1300,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
         <div className="community-top-actions">
           <button aria-label="Favorites" onClick={() => onNavigate?.("Favorites")}><Heart size={20} /></button>
           <button aria-label="Messages"><MessageCircle size={20} /></button>
-          <button className="community-notification" aria-label="Notifications"><Bell size={19} /><i /></button>
+          <button className="community-notification" aria-label="Notifications" onClick={()=>onNavigate?.("Notifications")}><Bell size={19} /><i /></button>
           <button className="community-profile-mini"><span>{avatar ? <img src={avatar} alt="" /> : <UserRound size={17} />}</span><b>{currentName.split(" ")[0]}</b><ChevronDown size={15} /></button>
         </div>
       </header>

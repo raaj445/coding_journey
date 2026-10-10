@@ -642,6 +642,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
   const [myCommunityIds, setMyCommunityIds] = useState([]);
   const [joinedCommunityIds, setJoinedCommunityIds] = useState([]);
   const [memberMenu, setMemberMenu] = useState(null);
+  const [transferringOwnership, setTransferringOwnership] = useState(false);
   const [joinRequests, setJoinRequests] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -1120,6 +1121,40 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     showNotice(nextRole==="ADMIN"?"Member promoted to Admin.":"Admin role removed.");
   }
 
+  async function transferCommunityOwnership(newOwnerId){
+    if(!supabase || !selectedCommunity?.id || !user?.id || transferringOwnership) return;
+    const target=communityMembers.find(m=>m.user_id===newOwnerId);
+    if(!target || target.user_id===user.id || target.role==="OWNER"){
+      showNotice("Choose another existing community member.");
+      return;
+    }
+    const confirmed=window.confirm("Transfer ownership of \""+selectedCommunity.name+"\" to "+(target.username||"this member")+"? You will become an Admin and cannot undo this transfer unless the new owner transfers it back.");
+    if(!confirmed) return;
+    setTransferringOwnership(true);
+    const {data,error}=await supabase.rpc("transfer_community_ownership",{
+      p_community_id:selectedCommunity.id,
+      p_new_owner_id:newOwnerId
+    });
+    setTransferringOwnership(false);
+    if(error || !data?.success){
+      showNotice(error?.message || "Ownership could not be transferred. Please try again.");
+      return;
+    }
+    const communityId=selectedCommunity.id;
+    setCommunityMembers(current=>current.map(member=>
+      member.community_id===communityId
+        ? member.user_id===newOwnerId ? {...member,role:"OWNER"} : member.user_id===user.id ? {...member,role:"ADMIN"} : member
+        : member
+    ));
+    setSelectedCommunity(current=>current?.id===communityId?{...current,ownerId:newOwnerId}:current);
+    setCommunityCards(current=>current.map(item=>item.id===communityId?{...item,ownerId:newOwnerId}:item));
+    setMyCommunityIds(current=>current.filter(id=>id!==communityId));
+    setMemberMenu(null);
+    setEditingRules(false);
+    setCommunityRefreshTick(v=>v+1);
+    showNotice("Ownership transferred successfully. You are now an Admin.");
+  }
+
   async function removeMember(memberId){
     if(!supabase || !selectedCommunity?.id) return;
     const target=communityMembers.find(m=>m.id===memberId);
@@ -1284,7 +1319,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
         <div className="community-member-avatar">{m.avatar_url?<img src={m.avatar_url} alt=""/>:<UserRound size={16}/>}</div>
         <div><b>{m.username || "Member"}</b><small>{m.role}</small></div>
         {m.role==="OWNER"?<em>Owner</em>:m.role==="ADMIN"?<em className="admin-badge">Admin</em>:<em className="member-badge">Member</em>}
-        {canManageMembers && m.user_id!==user?.id && m.role!=="OWNER" && <div className="community-member-menu-wrap"><button className="community-member-menu-button" onClick={()=>setMemberMenu(v=>v===m.id?null:m.id)}>•••</button>{memberMenu===m.id&&<div className="community-member-menu">{isOwnerCurrent&&<button onClick={()=>changeMemberRole(m.id,m.role==="ADMIN"?"MEMBER":"ADMIN")}>{m.role==="ADMIN"?"Remove Admin":"Make Admin"}</button>}<button className="danger" onClick={()=>removeMember(m.id)}>Remove Member</button></div>}</div>}
+        {canManageMembers && m.user_id!==user?.id && m.role!=="OWNER" && <div className="community-member-menu-wrap"><button className="community-member-menu-button" onClick={()=>setMemberMenu(v=>v===m.id?null:m.id)}>•••</button>{memberMenu===m.id&&<div className="community-member-menu">{isOwnerCurrent&&<button onClick={()=>changeMemberRole(m.id,m.role==="ADMIN"?"MEMBER":"ADMIN")}>{m.role==="ADMIN"?"Remove Admin":"Make Admin"}</button>}{isOwnerCurrent&&<button className="community-transfer-owner-action" disabled={transferringOwnership} onClick={()=>transferCommunityOwnership(m.user_id)}>{transferringOwnership?"Transferring…":"Transfer Ownership"}</button>}<button className="danger" onClick={()=>removeMember(m.id)}>Remove Member</button></div>}</div>}
       </div>)}</div>
       {!communityMembers.length&&<div className="community-empty-inline">No members found.</div>}{communityMembers.length&&!communityMembers.some(m=>(memberRoleFilter==="ALL"||m.role===memberRoleFilter)&&(m.username||"Member").toLowerCase().includes(memberSearch.toLowerCase()))&&<div className="community-empty-inline">No members in this category.</div>}
       </div></section>}{activeCommunityTab==="Events" && <section className="community-empty-tab"><div className="community-empty-icon">🎉</div><h2>No events yet</h2><p>Community events will appear here. Event creation is planned for V2.2.</p></section>}

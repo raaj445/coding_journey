@@ -980,3 +980,13 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
  .marketplace-report-backdrop{padding:10px;align-items:start}
  .marketplace-report-modal{max-height:calc(100vh - 20px);padding:22px 16px}
 }
+
+
+/* Keep ticket reports visually consistent with community post/comment reports. */
+.marketplace-report-modal .community-report-eyebrow{margin-top:0}
+.marketplace-report-modal .community-report-reasons{margin-top:2px}
+.marketplace-report-modal .community-report-reason{font-family:inherit}
+.marketplace-report-modal .community-report-reason:focus-visible,
+.marketplace-report-modal .community-modal-close:focus-visible,
+.marketplace-report-modal .community-modal-actions button:focus-visible{outline:3px solid #cfc1ff;outline-offset:2px}
+.marketplace-report-modal .community-report-details-meta{flex-wrap:wrap}

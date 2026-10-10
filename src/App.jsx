@@ -1077,37 +1077,21 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
 
   async function handleJoinRequest(requestId,status){
     if(!supabase || !selectedCommunity?.id) return;
-    const request=joinRequests.find(r=>r.id===requestId);
-    if(status==="ACCEPTED" && request){
-      const {error:memberError}=await supabase.from("community_members").insert({community_id:selectedCommunity.id,user_id:request.user_id,role:"MEMBER",username:request.requester_name||"Member",avatar_url:request.requester_avatar_url||null});
-      if(memberError && !/duplicate/i.test(memberError.message)){showNotice(memberError.message||"Could not add member.");return;}
-    }
-    const {error}=await supabase.from("community_join_requests").update({status}).eq("id",requestId).eq("community_id",selectedCommunity.id);
-    if(error){showNotice(error.message||"Could not update request.");return;}
+    const {data,error}=await supabase.rpc("process_community_join_request",{p_request_id:requestId,p_status:status});
+    if(error){showNotice(error.message||"Could not process join request.");return;}
     setJoinRequests(v=>v.filter(r=>r.id!==requestId));
     setCommunityRefreshTick(v=>v+1);
-    showNotice(status==="ACCEPTED"?"Join request accepted.":"Join request rejected.");
+    showNotice(status==="ACCEPTED"?"Join request accepted. The user is now a community member.":"Join request rejected.");
   }
 
   async function handleNotificationJoinRequest(notification,status){
-    if(!supabase || !notification?.entity_id || !notification?.community_id) return;
-    const communityId=notification.community_id;
-    const isOwner=selectedCommunity?.id===communityId && (selectedCommunity.ownerId===user?.id || myCommunityIds.includes(communityId));
-    const isAdmin=selectedCommunity?.id===communityId && communityMembers.some(m=>m.user_id===user?.id && m.role==="ADMIN");
-    if(!isOwner && !isAdmin){showNotice("Open this community as its owner or an admin to process the request.");return;}
-    const {data:request,error:requestError}=await supabase.from("community_join_requests").select("id,community_id,user_id,requester_name,requester_avatar_url,status").eq("id",notification.entity_id).eq("community_id",communityId).maybeSingle();
-    if(requestError || !request){showNotice(requestError?.message || "This join request is no longer available.");return;}
-    if(request.status!=="PENDING"){showNotice("This join request has already been processed.");return;}
-    if(status==="ACCEPTED"){
-      const {error:memberError}=await supabase.from("community_members").insert({community_id:communityId,user_id:request.user_id,role:"MEMBER",username:request.requester_name||"Member",avatar_url:request.requester_avatar_url||null});
-      if(memberError && !/duplicate/i.test(memberError.message)){showNotice(memberError.message||"Could not add member.");return;}
-    }
-    const {error}=await supabase.from("community_join_requests").update({status}).eq("id",request.id).eq("community_id",communityId).eq("status","PENDING");
-    if(error){showNotice(error.message||"Could not update request.");return;}
-    setJoinRequests(v=>v.filter(r=>r.id!==request.id));
-    setNotifications(v=>v.filter(n=>n.entity_id!==request.id || n.community_id!==communityId));
+    if(!supabase || !notification?.entity_id) return;
+    const {data,error}=await supabase.rpc("process_community_join_request",{p_request_id:notification.entity_id,p_status:status});
+    if(error){showNotice(error.message||"Could not process join request.");return;}
+    setJoinRequests(v=>v.filter(r=>r.id!==notification.entity_id));
+    setNotifications(v=>v.filter(n=>n.entity_id!==notification.entity_id));
     setCommunityRefreshTick(v=>v+1);
-    showNotice(status==="ACCEPTED"?"Join request accepted.":"Join request rejected.");
+    showNotice(status==="ACCEPTED"?"Join request accepted. The user is now a community member.":"Join request rejected.");
   }
 
   async function changeMemberRole(memberId,nextRole){

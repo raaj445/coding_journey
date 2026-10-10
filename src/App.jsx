@@ -828,11 +828,7 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
 
   function openInviteModal(community) {
     if (!community?.id) return;
-    const url = new URL(window.location.href);
-    url.searchParams.set("community", community.id);
-    url.searchParams.delete("invite");
-    if (community.privacy === "Private") url.searchParams.set("invite", "1");
-    setInviteLink(url.toString());
+    setInviteLink(buildCommunityShareUrl(community));
     setInviteModalOpen(true);
   }
 
@@ -898,11 +894,17 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     showNotice("Community rules saved.");
   }
 
-  async function shareCommunity(community) {
-    if (!community?.id) return;
+  function buildCommunityShareUrl(community) {
     const url = new URL(window.location.href);
     url.searchParams.set("community", community.id);
-    const shareUrl = url.toString();
+    url.searchParams.delete("invite");
+    if (community.privacy === "Private") url.searchParams.set("invite", "1");
+    return url.toString();
+  }
+
+  async function shareCommunity(community) {
+    if (!community?.id) return;
+    const shareUrl = buildCommunityShareUrl(community);
     try {
       if (navigator.share) {
         await navigator.share({ title: community.name, text: "Join " + community.name + " on ConnectHub", url: shareUrl });

@@ -932,3 +932,39 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .community-moderation-actions button.danger{border-color:#f2caca;color:#b42318;}
 .community-moderation-actions button:disabled{opacity:.55;cursor:wait;}
 .community-report-resolution{font-size:13px;background:#f7f6fb;border-radius:8px;padding:9px;}
+
+
+/* V2.3 Phase 3 — accessible community report modal */
+.community-report-backdrop{z-index:2100;overflow-y:auto;align-items:center}
+.community-report-modal{width:min(560px,100%);max-height:min(90vh,820px);overflow-y:auto;box-sizing:border-box;text-align:left;padding:26px}
+.community-report-modal .community-modal-icon{margin:0 auto 10px}
+.community-report-modal-icon{background:#f0ecff;color:#6336ec}
+.community-report-eyebrow{display:block;text-align:center;color:#7960c7;font:800 9px "Manrope",sans-serif;letter-spacing:1.5px;margin-bottom:7px}
+.community-report-modal h2{text-align:center;font-size:21px}
+.community-report-modal>p{text-align:center;max-width:420px;line-height:1.6;font-size:11px;margin:8px auto 18px}
+.community-report-reasons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.community-report-reason{display:flex;align-items:flex-start;gap:9px;min-width:0;text-align:left;padding:11px;border:1px solid #e7e3ef;border-radius:11px;background:#fff;color:#37364c;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+.community-report-reason:hover{border-color:#c9bafa;background:#fbfaff}
+.community-report-reason.selected{border-color:#8b6bea;background:#f6f2ff;box-shadow:0 0 0 1px #8b6bea}
+.community-report-radio{width:16px;height:16px;border:1.5px solid #c7c2d4;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;margin-top:1px}
+.community-report-reason.selected .community-report-radio{border-color:#6336ec}
+.community-report-radio>span{width:8px;height:8px;border-radius:50%;background:#6336ec}
+.community-report-reason-copy{display:grid;gap:4px;min-width:0}
+.community-report-reason-copy b{font:800 10px/1.35 "Manrope",sans-serif}
+.community-report-reason-copy small{color:#858398;font:500 9px/1.4 "DM Sans",sans-serif}
+.community-report-details-label{display:block;margin:17px 0 7px;color:#4f4b64;font:800 10px "Manrope",sans-serif}
+.community-report-modal textarea{display:block;width:100%;box-sizing:border-box;min-height:80px;resize:vertical;border:1px solid #dedce7;border-radius:10px;padding:11px 12px;color:#343249;background:#fff;font:500 11px/1.5 "DM Sans",sans-serif;outline:none}
+.community-report-modal textarea:focus{border-color:#8b6bea;box-shadow:0 0 0 3px #eee9ff}
+.community-report-details-meta{display:flex;justify-content:space-between;gap:10px;margin-top:5px;color:#9693a7;font:500 9px "DM Sans",sans-serif}
+.community-report-modal-actions{justify-content:flex-end;margin-top:18px}
+.community-report-modal-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:110px}
+.community-report-modal-actions button.primary{background:#6336ec;border-color:#6336ec;color:#fff}
+.community-report-modal-actions button:disabled,.community-report-modal .community-modal-close:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:520px){
+ .community-report-backdrop{padding:10px;align-items:start}
+ .community-report-modal{max-height:calc(100vh - 20px);padding:22px 16px}
+ .community-report-reasons{grid-template-columns:1fr}
+ .community-report-reason{padding:10px}
+ .community-report-modal-actions{display:grid;grid-template-columns:1fr 1fr}
+ .community-report-modal-actions button{min-width:0}
+}

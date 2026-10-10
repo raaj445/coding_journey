@@ -900,3 +900,6 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .notification-profile-card h2{margin:0 0 8px;color:#25263d;font:800 20px "Manrope"}
 .notification-profile-card p{margin:6px 0;color:#77778c;font-size:12px}
 .notification-profile-done{margin-top:16px;border:0;border-radius:9px;background:#6336ec;color:white;padding:10px 22px;font:800 11px "Manrope";cursor:pointer}
+
+.notification-request-status,.community-notification-request-status{display:inline-flex;align-items:center;border-radius:7px;padding:7px 10px;background:#f4f2f8;color:#777487;font:800 10px "Manrope",sans-serif}
+.community-notification-request-status{font-size:9px}

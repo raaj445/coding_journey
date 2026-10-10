@@ -1049,11 +1049,11 @@ function CommunitiesPage({ user, onBack, onNavigate, onLogout }) {
     }
     const isInviteRequest = new URLSearchParams(window.location.search).get("invite") === "1";
     if (community.privacy === "Private" || isInviteRequest) {
-      const { error } = await supabase.from("community_join_requests").upsert({community_id:community.id,user_id:user.id,status:"PENDING",requester_name:currentName,requester_avatar_url:avatar||null},{onConflict:"community_id,user_id"});
+      const { data, error } = await supabase.rpc("request_private_community_join",{p_community_id:community.id,p_requester_name:currentName,p_requester_avatar_url:avatar||null});
       if (!error) {
         setPendingRequestIds(current => current.includes(community.id) ? current : [...current, community.id]);
-        showNotice("Join request sent. The owner and admins have been notified.");
-      } else showNotice(error.message);
+        showNotice(data?.message || "Join request sent. The owner and admins have been notified.");
+      } else showNotice(error.message || "Could not send join request.");
       return;
     }
     const { error } = await supabase.from("community_members").insert({community_id:community.id,user_id:user.id,role:"MEMBER",username:currentName,avatar_url:avatar||null});

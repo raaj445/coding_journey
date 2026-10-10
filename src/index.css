@@ -913,3 +913,22 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .detail-report-button{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:10px;padding:10px 12px;border:1px solid #e5dfe9;border-radius:10px;background:#fff;color:#9a3d4b;font:700 12px Manrope, sans-serif;cursor:pointer;transition:background .15s,border-color .15s}
 .detail-report-button:hover{background:#fff4f4;border-color:#e8b8be}
 .detail-report-button:focus-visible{outline:2px solid #7955e8;outline-offset:2px}
+
+
+/* V2.3 Phase 3 — community reporting and moderation */
+.community-comment-report{border:0;background:transparent;color:#77718f;cursor:pointer;padding:4px 6px;border-radius:8px;}
+.community-comment-report:hover{background:#f1efff;color:#5b45c7;}
+.community-moderation-list{display:grid;gap:12px;margin-top:18px;}
+.community-moderation-report{border:1px solid #e9e6f2;border-radius:14px;padding:16px;background:#fff;}
+.community-moderation-report-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.community-moderation-report p{margin:10px 0;color:#49465b;overflow-wrap:anywhere;}
+.community-moderation-report small{color:#8b879a;}
+.community-report-status{font-size:11px;font-weight:750;border-radius:999px;padding:5px 9px;background:#f3f1f8;color:#625d76;}
+.community-report-status.open{background:#fff2dc;color:#925c09;}
+.community-report-status.action_taken{background:#e6f7ed;color:#197044;}
+.community-report-status.dismissed{background:#f1eff5;color:#77718a;}
+.community-moderation-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.community-moderation-actions button{border:1px solid #e3dfef;border-radius:9px;background:#fff;padding:8px 11px;cursor:pointer;color:#4c4665;font-weight:650;}
+.community-moderation-actions button.danger{border-color:#f2caca;color:#b42318;}
+.community-moderation-actions button:disabled{opacity:.55;cursor:wait;}
+.community-report-resolution{font-size:13px;background:#f7f6fb;border-radius:8px;padding:9px;}

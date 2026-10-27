@@ -63,9 +63,17 @@ const citiesByState = {
 function StationPicker({ label, value, onChange, stations, required = true, clearOnFocus = false }) {
   const [open, setOpen] = useState(false);
   const query = value.trim().toLowerCase();
-  const suggestions = query
-    ? stations.filter(s => `${s.name} ${s.code} ${s.state || ""}`.toLowerCase().includes(query)).slice(0, 8)
-    : stations.slice(0, 8);
+  // Accept the different field names used by common Indian railway station datasets.
+  const normalizedStations = (Array.isArray(stations) ? stations : []).map((raw) => {
+    const name = String(raw.name ?? raw.station_name ?? raw.stationName ?? raw.station ?? raw.stn_name ?? raw.stnName ?? "").trim();
+    const code = String(raw.code ?? raw.station_code ?? raw.stationCode ?? raw.stn_code ?? raw.stnCode ?? raw.station_id ?? "").trim().toUpperCase();
+    const state = String(raw.state ?? raw.state_name ?? raw.stateName ?? "").trim();
+    return { name, code, state };
+  }).filter(station => station.name && station.code);
+  const suggestions = (query
+    ? normalizedStations.filter(station => `${station.name} ${station.code} ${station.state}`.toLowerCase().includes(query))
+    : normalizedStations
+  ).slice(0, 8);
 
   return (
     <label className="modern-field station-picker-field">
@@ -78,6 +86,7 @@ function StationPicker({ label, value, onChange, stations, required = true, clea
             onChange={e => { onChange(e.target.value); setOpen(true); }}
             placeholder="Search station name or code"
             autoComplete="off"
+            aria-expanded={open}
           />
           <MapPin size={16}/>
         </div>
@@ -91,7 +100,7 @@ function StationPicker({ label, value, onChange, stations, required = true, clea
                 <b>{station.name}</b>
                 <span>{station.code}{station.state ? ` • ${station.state}` : ""}</span>
               </button>
-            )) : <div className="station-empty">No station found</div>}
+            )) : <div className="station-empty">{normalizedStations.length ? "No station found — try the full station name or code." : "Station data could not be loaded. Refresh the page and try again."}</div>}
           </div>
         )}
       </div>
